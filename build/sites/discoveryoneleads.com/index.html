@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Discovery1 — Home Services &amp; Contractor Lead Scraper</title>
+<meta name="description" content="Discovery1 scrapes unlimited home service and contractor leads from Google Maps. HVAC, plumbers, roofers, electricians, landscaping, and more. One-time payment.">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{--accent:#E67E22;--accent2:#D35400;--bg:#0F0F0A;--panel:#1A1A0F;--text:#F5CBA7;--bright:#FDEBD0}
+body{background:var(--bg);color:var(--text);font-family:'Segoe UI',system-ui,sans-serif;line-height:1.6}
+a{color:var(--accent);text-decoration:none}
+.nav{display:flex;align-items:center;justify-content:space-between;padding:16px 48px;border-bottom:1px solid #2A200A;position:sticky;top:0;background:rgba(15,15,10,0.95);backdrop-filter:blur(8px);z-index:100}
+.logo{font-size:22px;font-weight:800;color:var(--accent);letter-spacing:-0.5px}
+.nav-cta{background:var(--accent);color:#0F0F0A;padding:10px 24px;border-radius:6px;font-weight:700;font-size:14px;transition:.2s}
+.nav-cta:hover{background:var(--accent2)}
+.hero{text-align:center;padding:100px 24px 80px;max-width:900px;margin:0 auto}
+.badge{display:inline-block;background:rgba(230,126,34,.12);color:var(--accent);border:1px solid rgba(230,126,34,.3);padding:6px 16px;border-radius:100px;font-size:13px;font-weight:600;margin-bottom:24px;letter-spacing:.5px}
+h1{font-size:clamp(36px,6vw,68px);font-weight:900;color:var(--bright);line-height:1.1;margin-bottom:24px}
+h1 span{color:var(--accent)}
+.sub{font-size:20px;color:var(--text);max-width:600px;margin:0 auto 40px}
+.cta-row{display:flex;gap:16px;justify-content:center;flex-wrap:wrap}
+.btn-primary{background:var(--accent);color:#0F0F0A;padding:16px 40px;border-radius:8px;font-size:17px;font-weight:700;transition:.2s;display:inline-block}
+.btn-primary:hover{background:var(--accent2);transform:translateY(-1px)}
+.btn-secondary{background:transparent;color:var(--accent);border:2px solid var(--accent);padding:14px 32px;border-radius:8px;font-size:17px;font-weight:600;transition:.2s;display:inline-block}
+.btn-secondary:hover{background:rgba(230,126,34,.1)}
+.industries-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:16px;max-width:1000px;margin:60px auto;padding:0 24px}
+.industry-chip{background:var(--panel);border:1px solid #2A200A;border-radius:10px;padding:20px 16px;text-align:center;transition:.2s;font-size:14px;font-weight:600;color:var(--bright)}
+.industry-chip:hover{border-color:var(--accent);color:var(--accent)}
+.industry-chip .icon{font-size:24px;display:block;margin-bottom:8px}
+.features{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:24px;max-width:1100px;margin:40px auto 80px;padding:0 24px}
+.feature{background:var(--panel);border:1px solid #2A200A;border-radius:12px;padding:32px;transition:.2s}
+.feature:hover{border-color:var(--accent);transform:translateY(-2px)}
+.feature-icon{font-size:32px;margin-bottom:16px}
+.feature h3{font-size:18px;color:var(--bright);margin-bottom:10px;font-weight:700}
+.feature p{font-size:14px;color:#A04000}
+.pricing{text-align:center;padding:80px 24px;background:var(--panel);margin-top:60px}
+.pricing h2{font-size:40px;font-weight:800;color:var(--bright);margin-bottom:12px}
+.pricing-sub{color:var(--text);font-size:18px;margin-bottom:60px}
+.plans{display:flex;gap:24px;justify-content:center;flex-wrap:wrap;max-width:900px;margin:0 auto}
+.plan{background:var(--bg);border:1px solid #2A200A;border-radius:16px;padding:40px 32px;flex:1;min-width:260px;max-width:380px;transition:.2s}
+.plan.featured{border-color:var(--accent);position:relative}
+.plan-badge{position:absolute;top:-14px;left:50%;transform:translateX(-50%);background:var(--accent);color:#0F0F0A;padding:4px 18px;border-radius:100px;font-size:12px;font-weight:700;white-space:nowrap}
+.plan h3{font-size:20px;font-weight:700;color:var(--bright);margin-bottom:8px}
+.price{font-size:52px;font-weight:900;color:var(--accent);line-height:1;margin:16px 0 4px}
+.price sup{font-size:22px;vertical-align:top;margin-top:12px}
+.price-note{font-size:14px;color:#A04000;margin-bottom:24px}
+.plan ul{list-style:none;text-align:left;margin-bottom:32px}
+.plan ul li{padding:8px 0;border-bottom:1px solid #2A200A;font-size:15px;display:flex;gap:8px}
+.plan ul li::before{content:"✓";color:var(--accent);font-weight:700;flex-shrink:0}
+.plan .btn-primary,.plan .btn-secondary{width:100%;text-align:center;display:block}
+.node-note{font-size:13px;color:#7D6608;margin-top:16px}
+footer{text-align:center;padding:40px 24px;border-top:1px solid #2A200A;color:#7D6608;font-size:14px;margin-top:60px}
+</style>
+</head>
+<body>
+<nav class="nav">
+  <div class="logo">&#128296; Discovery1</div>
+  <a href="#pricing" class="nav-cta">Get Lifetime Access &rarr;</a>
+</nav>
+
+<section class="hero">
+  <div class="badge">&#127968; HOME SERVICES LEAD SCRAPER</div>
+  <h1>Find <span>Contractor Leads</span><br>in Any City</h1>
+  <p class="sub">Scrape HVAC companies, plumbers, roofers, electricians, landscapers, and 15+ other home service trades directly from Google Maps.</p>
+  <div class="cta-row">
+    <a href="#pricing" class="btn-primary">Get Lifetime Access &mdash; $997</a>
+    <a href="#industries" class="btn-secondary">View All Industries</a>
+  </div>
+</section>
+
+<section id="industries">
+  <div class="industries-grid">
+    <div class="industry-chip"><span class="icon">&#10052;</span>HVAC</div>
+    <div class="industry-chip"><span class="icon">&#128167;</span>Plumbers</div>
+    <div class="industry-chip"><span class="icon">&#9889;</span>Electricians</div>
+    <div class="industry-chip"><span class="icon">&#127968;</span>Roofing</div>
+    <div class="industry-chip"><span class="icon">&#128296;</span>Contractors</div>
+    <div class="industry-chip"><span class="icon">&#127777;</span>Pest Control</div>
+    <div class="industry-chip"><span class="icon">&#127807;</span>Landscaping</div>
+    <div class="industry-chip"><span class="icon">&#127840;</span>Cleaning</div>
+    <div class="industry-chip"><span class="icon">&#129695;</span>Window Clean</div>
+    <div class="industry-chip"><span class="icon">&#128166;</span>Pressure Wash</div>
+    <div class="industry-chip"><span class="icon">&#128296;</span>Handyman</div>
+    <div class="industry-chip"><span class="icon">&#127944;</span>Pool Service</div>
+    <div class="industry-chip"><span class="icon">&#127968;</span>Garage Doors</div>
+    <div class="industry-chip"><span class="icon">&#128260;</span>Appliance Repair</div>
+    <div class="industry-chip"><span class="icon">&#127912;</span>Painting</div>
+  </div>
+</section>
+
+<section class="features">
+  <div class="feature">
+    <div class="feature-icon">&#128506;</div>
+    <h3>Google Maps Scraping</h3>
+    <p>Pull every contractor in any zip code or city. Get name, phone, address, website, and rating.</p>
+  </div>
+  <div class="feature">
+    <div class="feature-icon">&#128231;</div>
+    <h3>Email Extraction</h3>
+    <p>Visits each business website and extracts the contact email from the contact page automatically.</p>
+  </div>
+  <div class="feature">
+    <div class="feature-icon">&#128269;</div>
+    <h3>Platform Detection</h3>
+    <p>Know if a contractor uses WordPress, Wix, or a custom site — useful for web design agencies.</p>
+  </div>
+  <div class="feature">
+    <div class="feature-icon">&#128202;</div>
+    <h3>CSV Export</h3>
+    <p>Export leads to CSV instantly. Import to any CRM, email sender, or Google Sheets.</p>
+  </div>
+</section>
+
+<section class="pricing" id="pricing">
+  <h2>Simple, Honest Pricing</h2>
+  <p class="pricing-sub">Pay once. Scrape unlimited home service leads forever.</p>
+  <div class="plans">
+    <div class="plan">
+      <h3>Monthly</h3>
+      <div class="price"><sup>$</sup>297</div>
+      <div class="price-note">per month</div>
+      <ul>
+        <li>1 computer (node) included</li>
+        <li>Unlimited scraping</li>
+        <li>15+ contractor industries</li>
+        <li>Email + platform detection</li>
+        <li>CSV export</li>
+        <li>Extra nodes: $99/mo each</li>
+      </ul>
+      <a href="mailto:support@discoveryoneleads.com?subject=Monthly Plan" class="btn-secondary">Start Monthly</a>
+    </div>
+    <div class="plan featured">
+      <div class="plan-badge">BEST VALUE</div>
+      <h3>Lifetime</h3>
+      <div class="price"><sup>$</sup>997</div>
+      <div class="price-note">one-time payment</div>
+      <ul>
+        <li>1 computer (node) included</li>
+        <li>Unlimited scraping &mdash; forever</li>
+        <li>15+ contractor industries</li>
+        <li>Email + platform detection</li>
+        <li>CSV export</li>
+        <li>Extra nodes: $99 one-time each</li>
+        <li>Free updates</li>
+      </ul>
+      <a href="mailto:support@discoveryoneleads.com?subject=Lifetime License" class="btn-primary">Get Lifetime Access</a>
+      <p class="node-note">Need to scrape from multiple computers? Add nodes anytime for $99 each.</p>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <p>&copy; 2026 Discovery1 Leads. All rights reserved. | <a href="mailto:support@discoveryoneleads.com">support@discoveryoneleads.com</a></p>
+</footer>
+</body>
+</html>

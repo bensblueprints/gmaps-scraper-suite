@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Leads.Baby — The Cutest Way to Scrape Google Maps Leads</title>
+<meta name="description" content="Leads.Baby scrapes unlimited business leads from Google Maps across 20+ industries. Email extraction, platform detection, CSV export. One-time $997 lifetime license.">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{--accent:#FF6B9D;--accent2:#E05585;--bg:#0D0608;--panel:#1A0A10;--text:#FFD6E7;--bright:#FFE4EE}
+body{background:var(--bg);color:var(--text);font-family:'Segoe UI',system-ui,sans-serif;line-height:1.6}
+a{color:var(--accent);text-decoration:none}
+.nav{display:flex;align-items:center;justify-content:space-between;padding:16px 48px;border-bottom:1px solid #2A0A18;position:sticky;top:0;background:rgba(13,6,8,0.95);backdrop-filter:blur(8px);z-index:100}
+.logo{font-size:22px;font-weight:800;color:var(--accent);letter-spacing:-0.5px}
+.nav-cta{background:var(--accent);color:#0D0608;padding:10px 24px;border-radius:6px;font-weight:700;font-size:14px;transition:.2s}
+.nav-cta:hover{background:var(--accent2)}
+.hero{text-align:center;padding:100px 24px 80px;max-width:900px;margin:0 auto}
+.badge{display:inline-block;background:rgba(255,107,157,.12);color:var(--accent);border:1px solid rgba(255,107,157,.3);padding:6px 16px;border-radius:100px;font-size:13px;font-weight:600;margin-bottom:24px;letter-spacing:.5px}
+h1{font-size:clamp(36px,6vw,68px);font-weight:900;color:var(--bright);line-height:1.1;margin-bottom:24px}
+h1 span{color:var(--accent)}
+.sub{font-size:20px;color:var(--text);max-width:640px;margin:0 auto 40px}
+.cta-row{display:flex;gap:16px;justify-content:center;flex-wrap:wrap}
+.btn-primary{background:var(--accent);color:#0D0608;padding:16px 40px;border-radius:8px;font-size:17px;font-weight:700;transition:.2s;display:inline-block}
+.btn-primary:hover{background:var(--accent2);transform:translateY(-1px)}
+.btn-secondary{background:transparent;color:var(--accent);border:2px solid var(--accent);padding:14px 32px;border-radius:8px;font-size:17px;font-weight:600;transition:.2s;display:inline-block}
+.btn-secondary:hover{background:rgba(255,107,157,.1)}
+.features{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:24px;max-width:1100px;margin:80px auto;padding:0 24px}
+.feature{background:var(--panel);border:1px solid #2A0A18;border-radius:12px;padding:32px;transition:.2s}
+.feature:hover{border-color:var(--accent);transform:translateY(-2px)}
+.feature-icon{font-size:32px;margin-bottom:16px}
+.feature h3{font-size:18px;color:var(--bright);margin-bottom:10px;font-weight:700}
+.feature p{font-size:14px;color:#C0607A}
+.industries-section{max-width:1000px;margin:0 auto 80px;padding:0 24px;text-align:center}
+.industries-section h2{font-size:32px;font-weight:800;color:var(--bright);margin-bottom:32px}
+.industry-tags{display:flex;flex-wrap:wrap;gap:12px;justify-content:center}
+.tag{background:var(--panel);border:1px solid #2A0A18;color:var(--text);padding:8px 18px;border-radius:100px;font-size:14px;font-weight:500;transition:.2s}
+.tag:hover{border-color:var(--accent);color:var(--accent)}
+.pricing{text-align:center;padding:80px 24px;background:var(--panel);margin-top:60px}
+.pricing h2{font-size:40px;font-weight:800;color:var(--bright);margin-bottom:12px}
+.pricing-sub{color:var(--text);font-size:18px;margin-bottom:60px}
+.plans{display:flex;gap:24px;justify-content:center;flex-wrap:wrap;max-width:900px;margin:0 auto}
+.plan{background:var(--bg);border:1px solid #2A0A18;border-radius:16px;padding:40px 32px;flex:1;min-width:260px;max-width:380px;transition:.2s}
+.plan.featured{border-color:var(--accent);position:relative}
+.plan-badge{position:absolute;top:-14px;left:50%;transform:translateX(-50%);background:var(--accent);color:#0D0608;padding:4px 18px;border-radius:100px;font-size:12px;font-weight:700;white-space:nowrap}
+.plan h3{font-size:20px;font-weight:700;color:var(--bright);margin-bottom:8px}
+.price{font-size:52px;font-weight:900;color:var(--accent);line-height:1;margin:16px 0 4px}
+.price sup{font-size:22px;vertical-align:top;margin-top:12px}
+.price-note{font-size:14px;color:#C0607A;margin-bottom:24px}
+.plan ul{list-style:none;text-align:left;margin-bottom:32px}
+.plan ul li{padding:8px 0;border-bottom:1px solid #2A0A18;font-size:15px;display:flex;gap:8px}
+.plan ul li::before{content:"✓";color:var(--accent);font-weight:700;flex-shrink:0}
+.plan .btn-primary,.plan .btn-secondary{width:100%;text-align:center;display:block}
+.node-note{font-size:13px;color:#8C3A55;margin-top:16px}
+footer{text-align:center;padding:40px 24px;border-top:1px solid #2A0A18;color:#8C3A55;font-size:14px;margin-top:60px}
+</style>
+</head>
+<body>
+<nav class="nav">
+  <div class="logo">&#128149; Leads.Baby</div>
+  <a href="#pricing" class="nav-cta">Get Lifetime Access &rarr;</a>
+</nav>
+
+<section class="hero">
+  <div class="badge">&#128149; GOOGLE MAPS LEAD SCRAPER</div>
+  <h1>Leads So Good,<br>They Should Be <span>Illegal</span></h1>
+  <p class="sub">Scrape business names, phone numbers, emails, websites, and platform info from Google Maps — across 20+ industries, any city in the USA.</p>
+  <div class="cta-row">
+    <a href="#pricing" class="btn-primary">Get Lifetime Access &mdash; $997</a>
+    <a href="#industries" class="btn-secondary">See All 20 Industries</a>
+  </div>
+</section>
+
+<section class="features">
+  <div class="feature">
+    <div class="feature-icon">&#128506;</div>
+    <h3>Google Maps Scraping</h3>
+    <p>Target any city, any industry. Scrape every business listing that matches your search — deep pagination included.</p>
+  </div>
+  <div class="feature">
+    <div class="feature-icon">&#128231;</div>
+    <h3>Email Extraction</h3>
+    <p>Auto-visits every business website and pulls the contact email from the contact page or footer.</p>
+  </div>
+  <div class="feature">
+    <div class="feature-icon">&#128269;</div>
+    <h3>Platform Detection</h3>
+    <p>Finds out if the site is built on WordPress, Wix, Shopify, Squarespace, Webflow, and more.</p>
+  </div>
+  <div class="feature">
+    <div class="feature-icon">&#128202;</div>
+    <h3>CSV Export</h3>
+    <p>One-click export to CSV. Load straight into your CRM, Apollo, Instantly, or any outreach tool.</p>
+  </div>
+  <div class="feature">
+    <div class="feature-icon">&#128421;</div>
+    <h3>Runs Locally</h3>
+    <p>Desktop app for Windows. Leads save directly to your computer — no cloud, no recurring storage fees.</p>
+  </div>
+  <div class="feature">
+    <div class="feature-icon">&#128274;</div>
+    <h3>Node-Locked License</h3>
+    <p>1 computer included. Add more computers for $99/node anytime. No subscriptions for the core tool.</p>
+  </div>
+</section>
+
+<section class="industries-section" id="industries">
+  <h2>20+ Industries Covered</h2>
+  <div class="industry-tags">
+    <span class="tag">Restaurants</span>
+    <span class="tag">Retail Stores</span>
+    <span class="tag">Real Estate Agents</span>
+    <span class="tag">Insurance Agents</span>
+    <span class="tag">Dentists</span>
+    <span class="tag">Chiropractors</span>
+    <span class="tag">Gyms &amp; Fitness</span>
+    <span class="tag">Lawyers</span>
+    <span class="tag">Marketing Agencies</span>
+    <span class="tag">Accountants</span>
+    <span class="tag">Plumbers</span>
+    <span class="tag">Electricians</span>
+    <span class="tag">HVAC</span>
+    <span class="tag">Landscaping</span>
+    <span class="tag">Auto Repair</span>
+    <span class="tag">Beauty Salons</span>
+    <span class="tag">Pet Services</span>
+    <span class="tag">Photography</span>
+    <span class="tag">Cleaning Services</span>
+    <span class="tag">Roofing</span>
+  </div>
+</section>
+
+<section class="pricing" id="pricing">
+  <h2>Simple, Honest Pricing</h2>
+  <p class="pricing-sub">Pay once. Scrape unlimited leads forever. No hidden fees.</p>
+  <div class="plans">
+    <div class="plan">
+      <h3>Monthly</h3>
+      <div class="price"><sup>$</sup>297</div>
+      <div class="price-note">per month</div>
+      <ul>
+        <li>1 computer (node) included</li>
+        <li>Unlimited scraping</li>
+        <li>20+ industries</li>
+        <li>Email + platform detection</li>
+        <li>CSV export</li>
+        <li>Extra nodes: $99/mo each</li>
+      </ul>
+      <a href="mailto:support@leads.baby?subject=Monthly Plan" class="btn-secondary">Start Monthly</a>
+    </div>
+    <div class="plan featured">
+      <div class="plan-badge">BEST VALUE</div>
+      <h3>Lifetime</h3>
+      <div class="price"><sup>$</sup>997</div>
+      <div class="price-note">one-time payment</div>
+      <ul>
+        <li>1 computer (node) included</li>
+        <li>Unlimited scraping &mdash; forever</li>
+        <li>20+ industries</li>
+        <li>Email + platform detection</li>
+        <li>CSV export</li>
+        <li>Extra nodes: $99 one-time each</li>
+        <li>Free updates</li>
+      </ul>
+      <a href="mailto:support@leads.baby?subject=Lifetime License" class="btn-primary">Get Lifetime Access</a>
+      <p class="node-note">Scale across multiple computers. Add nodes anytime for $99 each.</p>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <p>&copy; 2026 Leads.Baby. All rights reserved. | <a href="mailto:support@leads.baby">support@leads.baby</a></p>
+</footer>
+</body>
+</html>

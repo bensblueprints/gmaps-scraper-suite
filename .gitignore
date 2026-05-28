@@ -1,0 +1,15 @@
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.pytest_cache/
+dist/
+build/Monitor_Dashboard/
+build/Scraper_Node/
+*.db
+*.csv
+output/
+*.spec
+.env
+.env.*
+node_modules/
