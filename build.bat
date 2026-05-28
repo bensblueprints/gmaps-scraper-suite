@@ -4,68 +4,91 @@ cd /d "%~dp0"
 set ROOT=%~dp0
 
 echo ==========================================
-echo  Google Maps Scraper Suite - Build EXEs
+echo  Google Maps Scraper Suite - Build All EXEs
 echo ==========================================
 echo.
 
-echo [1/5] Installing dependencies...
+echo [1] Installing dependencies...
 pip install customtkinter playwright pyinstaller --quiet
 if errorlevel 1 goto error
 
-echo [2/5] Getting CustomTkinter path...
+echo [2] Getting paths...
 for /f "delims=" %%P in ('python -c "import customtkinter, os; print(os.path.dirname(customtkinter.__file__))"') do set CTK=%%P
+for /f "delims=" %%P in ('python -c "import playwright, os; print(os.path.dirname(playwright.__file__))"') do set PWL=%%P
 if "!CTK!"=="" goto error
-echo        !CTK!
+if "!PWL!"=="" goto error
 
-echo [2b] Getting Playwright path...
-for /f "delims=" %%P in ('python -c "import playwright, os; print(os.path.dirname(playwright.__file__))"') do set PWD=%%P
-if "!PWD!"=="" goto error
-echo        !PWD!
+echo       CTK: !CTK!
+echo       PWL: !PWL!
 
 echo.
-echo [3/5] Cleaning previous builds...
-if exist build rmdir /s /q build
-if exist dist  rmdir /s /q dist
+echo [3] Cleaning previous builds...
+if exist dist rmdir /s /q dist
+mkdir dist
 
 echo.
-echo [4/5] Building Scraper_Node.exe ...
-pyinstaller ^
-  --onefile ^
-  --windowed ^
-  --noconfirm ^
-  --name "Scraper_Node" ^
-  --add-data "!CTK!;customtkinter" ^
-  --add-data "!PWD!;playwright" ^
-  --paths "!ROOT!" ^
-  --paths "!ROOT!scraper_node" ^
+echo [4] Building LeadScraperPro.exe ...
+pyinstaller --onefile --windowed --noconfirm ^
+  --name "LeadScraperPro" ^
+  --add-data "!CTK!;customtkinter" --add-data "!PWL!;playwright" ^
+  --paths "!ROOT!" --paths "!ROOT!scraper_node" ^
   --collect-all "playwright" ^
-  --hidden-import "shared" ^
-  --hidden-import "shared.config" ^
-  --hidden-import "engine" ^
-  --hidden-import "industries" ^
-  --hidden-import "gmaps_scraper" ^
-  --hidden-import "tkinter" ^
-  --hidden-import "tkinter.ttk" ^
+  --hidden-import "shared" --hidden-import "shared.config" --hidden-import "shared.machine_id" ^
+  --hidden-import "engine" --hidden-import "industries" --hidden-import "gmaps_scraper" ^
+  --hidden-import "tkinter" --hidden-import "tkinter.ttk" ^
   "!ROOT!scraper_node\app.py"
 if errorlevel 1 goto error
 
 echo.
-echo [5/5] Building Monitor_Dashboard.exe ...
-for /f "delims=" %%P in ('python -c "import customtkinter, os; print(os.path.dirname(customtkinter.__file__))"') do set CTK=%%P
-pyinstaller ^
-  --onefile ^
-  --windowed ^
-  --noconfirm ^
-  --name "Monitor_Dashboard" ^
-  --add-data "!CTK!;customtkinter" ^
-  --paths "!ROOT!" ^
-  --paths "!ROOT!monitor" ^
-  --hidden-import "shared" ^
-  --hidden-import "shared.config" ^
-  --hidden-import "data_manager" ^
-  --hidden-import "tkinter" ^
-  --hidden-import "tkinter.ttk" ^
-  "!ROOT!monitor\app.py"
+echo [5] Building Discovery1.exe ...
+pyinstaller --onefile --windowed --noconfirm ^
+  --name "Discovery1" ^
+  --add-data "!CTK!;customtkinter" --add-data "!PWL!;playwright" ^
+  --paths "!ROOT!" --paths "!ROOT!scraper_node" ^
+  --collect-all "playwright" ^
+  --hidden-import "shared" --hidden-import "shared.config" --hidden-import "shared.machine_id" ^
+  --hidden-import "discovery1.industries" ^
+  --hidden-import "engine" --hidden-import "tkinter" --hidden-import "tkinter.ttk" ^
+  "!ROOT!discovery1\app.py"
+if errorlevel 1 goto error
+
+echo.
+echo [6] Building ProspectHunter.exe ...
+pyinstaller --onefile --windowed --noconfirm ^
+  --name "ProspectHunter" ^
+  --add-data "!CTK!;customtkinter" --add-data "!PWL!;playwright" ^
+  --paths "!ROOT!" --paths "!ROOT!scraper_node" ^
+  --collect-all "playwright" ^
+  --hidden-import "shared" --hidden-import "shared.config" --hidden-import "shared.machine_id" ^
+  --hidden-import "prospecthunter.industries" ^
+  --hidden-import "engine" --hidden-import "tkinter" --hidden-import "tkinter.ttk" ^
+  "!ROOT!prospecthunter\app.py"
+if errorlevel 1 goto error
+
+echo.
+echo [7] Building AtomicScraper.exe ...
+pyinstaller --onefile --windowed --noconfirm ^
+  --name "AtomicScraper" ^
+  --add-data "!CTK!;customtkinter" --add-data "!PWL!;playwright" ^
+  --paths "!ROOT!" --paths "!ROOT!scraper_node" ^
+  --collect-all "playwright" ^
+  --hidden-import "shared" --hidden-import "shared.config" --hidden-import "shared.machine_id" ^
+  --hidden-import "atomicscraper.industries" ^
+  --hidden-import "engine" --hidden-import "tkinter" --hidden-import "tkinter.ttk" ^
+  "!ROOT!atomicscraper\app.py"
+if errorlevel 1 goto error
+
+echo.
+echo [8] Building LeadsBaby.exe ...
+pyinstaller --onefile --windowed --noconfirm ^
+  --name "LeadsBaby" ^
+  --add-data "!CTK!;customtkinter" --add-data "!PWL!;playwright" ^
+  --paths "!ROOT!" --paths "!ROOT!scraper_node" ^
+  --collect-all "playwright" ^
+  --hidden-import "shared" --hidden-import "shared.config" --hidden-import "shared.machine_id" ^
+  --hidden-import "leadsbaby.industries" ^
+  --hidden-import "engine" --hidden-import "tkinter" --hidden-import "tkinter.ttk" ^
+  "!ROOT!leadsbaby\app.py"
 if errorlevel 1 goto error
 
 echo.
@@ -75,11 +98,13 @@ echo ==========================================
 echo.
 dir /b dist\*.exe 2>nul
 echo.
-echo  Both EXEs are in: dist\
-echo  On first run of Scraper_Node.exe:
-echo    - Chromium is already on this machine
-echo    - Click "Chromium Installed" shows green
-echo    - Pick industries, set city, START QUEUE
+echo  All EXEs are in: dist\
+echo  Download links will be:
+echo    dist\LeadScraperPro.exe     (lead-scraper-pro)
+echo    dist\Discovery1.exe         (discoveryoneleads.com)
+echo    dist\ProspectHunter.exe     (prospecthunter)
+echo    dist\AtomicScraper.exe      (atomicscraper.com)
+echo    dist\LeadsBaby.exe          (leads.baby)
 echo ==========================================
 pause
 goto end
