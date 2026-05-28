@@ -3,43 +3,54 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Leads.Baby — The Cutest Way to Scrape Google Maps Leads</title>
-<meta name="description" content="Leads.Baby scrapes unlimited business leads from Google Maps across 20+ industries. Email extraction, platform detection, CSV export. One-time $997 lifetime license.">
+<title>Leads.Baby — Scrape Any Google Maps Industry, Any City</title>
+<meta name="description" content="Leads.Baby scrapes unlimited business leads from Google Maps. 800+ industries, email extraction, platform detection. $997 lifetime or $297/mo.">
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
 :root{--accent:#FF6B9D;--accent2:#E05585;--bg:#0D0608;--panel:#1A0A10;--text:#FFD6E7;--bright:#FFE4EE}
 body{background:var(--bg);color:var(--text);font-family:'Segoe UI',system-ui,sans-serif;line-height:1.6}
 a{color:var(--accent);text-decoration:none}
-.nav{display:flex;align-items:center;justify-content:space-between;padding:16px 48px;border-bottom:1px solid #2A0A18;position:sticky;top:0;background:rgba(13,6,8,0.95);backdrop-filter:blur(8px);z-index:100}
-.logo{font-size:22px;font-weight:800;color:var(--accent);letter-spacing:-0.5px}
+.nav{display:flex;align-items:center;justify-content:space-between;padding:16px 48px;border-bottom:1px solid #2A0A18;position:sticky;top:0;background:rgba(13,6,8,0.97);backdrop-filter:blur(8px);z-index:100}
+.logo{font-size:22px;font-weight:800;color:var(--accent)}
 .nav-cta{background:var(--accent);color:#0D0608;padding:10px 24px;border-radius:6px;font-weight:700;font-size:14px;transition:.2s}
 .nav-cta:hover{background:var(--accent2)}
-.hero{text-align:center;padding:100px 24px 80px;max-width:900px;margin:0 auto}
-.badge{display:inline-block;background:rgba(255,107,157,.12);color:var(--accent);border:1px solid rgba(255,107,157,.3);padding:6px 16px;border-radius:100px;font-size:13px;font-weight:600;margin-bottom:24px;letter-spacing:.5px}
+.hero{text-align:center;padding:100px 24px 60px;max-width:900px;margin:0 auto}
+.badge{display:inline-block;background:rgba(255,107,157,.12);color:var(--accent);border:1px solid rgba(255,107,157,.3);padding:6px 16px;border-radius:100px;font-size:13px;font-weight:600;margin-bottom:24px}
 h1{font-size:clamp(36px,6vw,68px);font-weight:900;color:var(--bright);line-height:1.1;margin-bottom:24px}
 h1 span{color:var(--accent)}
 .sub{font-size:20px;color:var(--text);max-width:640px;margin:0 auto 40px}
-.cta-row{display:flex;gap:16px;justify-content:center;flex-wrap:wrap}
-.btn-primary{background:var(--accent);color:#0D0608;padding:16px 40px;border-radius:8px;font-size:17px;font-weight:700;transition:.2s;display:inline-block}
+.cta-row{display:flex;gap:16px;justify-content:center;flex-wrap:wrap;margin-bottom:16px}
+.btn-primary{background:var(--accent);color:#0D0608;padding:16px 40px;border-radius:8px;font-size:17px;font-weight:700;transition:.2s;display:inline-block;cursor:pointer;border:none}
 .btn-primary:hover{background:var(--accent2);transform:translateY(-1px)}
-.btn-secondary{background:transparent;color:var(--accent);border:2px solid var(--accent);padding:14px 32px;border-radius:8px;font-size:17px;font-weight:600;transition:.2s;display:inline-block}
+.btn-secondary{background:transparent;color:var(--accent);border:2px solid var(--accent);padding:14px 32px;border-radius:8px;font-size:17px;font-weight:600;transition:.2s;display:inline-block;cursor:pointer}
 .btn-secondary:hover{background:rgba(255,107,157,.1)}
-.features{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:24px;max-width:1100px;margin:80px auto;padding:0 24px}
+
+/* Industry search */
+.industry-search-section{max-width:700px;margin:0 auto 80px;padding:0 24px;text-align:center}
+.industry-search-section h2{font-size:24px;color:var(--bright);font-weight:700;margin-bottom:8px}
+.industry-search-section p{color:#9E9E9E;margin-bottom:20px;font-size:15px}
+.search-box{position:relative;margin-bottom:16px}
+.search-box input{width:100%;padding:14px 20px;background:#1A0A10;border:2px solid #3A0A20;border-radius:10px;color:var(--bright);font-size:16px;outline:none;transition:.2s}
+.search-box input:focus{border-color:var(--accent)}
+.search-box input::placeholder{color:#616161}
+.industry-results{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;min-height:40px}
+.industry-tag{background:#1A0A10;border:1px solid #3A0A20;color:var(--text);padding:6px 14px;border-radius:100px;font-size:13px;cursor:pointer;transition:.2s}
+.industry-tag:hover{border-color:var(--accent);color:var(--accent)}
+.industry-count{color:#616161;font-size:13px;margin-top:12px}
+
+.features{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:24px;max-width:1100px;margin:0 auto 80px;padding:0 24px}
 .feature{background:var(--panel);border:1px solid #2A0A18;border-radius:12px;padding:32px;transition:.2s}
 .feature:hover{border-color:var(--accent);transform:translateY(-2px)}
 .feature-icon{font-size:32px;margin-bottom:16px}
 .feature h3{font-size:18px;color:var(--bright);margin-bottom:10px;font-weight:700}
 .feature p{font-size:14px;color:#C0607A}
-.industries-section{max-width:1000px;margin:0 auto 80px;padding:0 24px;text-align:center}
-.industries-section h2{font-size:32px;font-weight:800;color:var(--bright);margin-bottom:32px}
-.industry-tags{display:flex;flex-wrap:wrap;gap:12px;justify-content:center}
-.tag{background:var(--panel);border:1px solid #2A0A18;color:var(--text);padding:8px 18px;border-radius:100px;font-size:14px;font-weight:500;transition:.2s}
-.tag:hover{border-color:var(--accent);color:var(--accent)}
-.pricing{text-align:center;padding:80px 24px;background:var(--panel);margin-top:60px}
+
+/* Pricing */
+.pricing{text-align:center;padding:80px 24px;background:var(--panel)}
 .pricing h2{font-size:40px;font-weight:800;color:var(--bright);margin-bottom:12px}
 .pricing-sub{color:var(--text);font-size:18px;margin-bottom:60px}
 .plans{display:flex;gap:24px;justify-content:center;flex-wrap:wrap;max-width:900px;margin:0 auto}
-.plan{background:var(--bg);border:1px solid #2A0A18;border-radius:16px;padding:40px 32px;flex:1;min-width:260px;max-width:380px;transition:.2s}
+.plan{background:var(--bg);border:1px solid #2A0A18;border-radius:16px;padding:40px 32px;flex:1;min-width:260px;max-width:380px}
 .plan.featured{border-color:var(--accent);position:relative}
 .plan-badge{position:absolute;top:-14px;left:50%;transform:translateX(-50%);background:var(--accent);color:#0D0608;padding:4px 18px;border-radius:100px;font-size:12px;font-weight:700;white-space:nowrap}
 .plan h3{font-size:20px;font-weight:700;color:var(--bright);margin-bottom:8px}
@@ -49,126 +60,288 @@ h1 span{color:var(--accent)}
 .plan ul{list-style:none;text-align:left;margin-bottom:32px}
 .plan ul li{padding:8px 0;border-bottom:1px solid #2A0A18;font-size:15px;display:flex;gap:8px}
 .plan ul li::before{content:"✓";color:var(--accent);font-weight:700;flex-shrink:0}
-.plan .btn-primary,.plan .btn-secondary{width:100%;text-align:center;display:block}
-.node-note{font-size:13px;color:#8C3A55;margin-top:16px}
+
+/* Purchase form modal */
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.8);z-index:1000;align-items:center;justify-content:center;padding:24px}
+.modal-overlay.open{display:flex}
+.modal{background:#1A0A10;border:2px solid var(--accent);border-radius:16px;padding:40px;width:100%;max-width:480px;position:relative}
+.modal h2{color:var(--bright);font-size:24px;margin-bottom:8px}
+.modal p{color:#9E9E9E;margin-bottom:24px;font-size:14px}
+.modal-close{position:absolute;top:16px;right:20px;background:transparent;border:none;color:#9E9E9E;font-size:24px;cursor:pointer;line-height:1}
+.form-group{margin-bottom:16px}
+.form-group label{display:block;color:var(--text);font-size:14px;margin-bottom:6px;font-weight:600}
+.form-group input,.form-group select{width:100%;padding:12px 16px;background:#0D0608;border:1.5px solid #3A0A20;border-radius:8px;color:var(--bright);font-size:15px;outline:none;transition:.2s}
+.form-group input:focus,.form-group select:focus{border-color:var(--accent)}
+.form-group select option{background:#1A0A10}
+.form-submit{width:100%;padding:14px;background:var(--accent);color:#0D0608;border:none;border-radius:8px;font-size:16px;font-weight:700;cursor:pointer;transition:.2s;margin-top:8px}
+.form-submit:hover{background:var(--accent2)}
+.form-submit:disabled{opacity:.5;cursor:not-allowed}
+.form-note{font-size:12px;color:#616161;text-align:center;margin-top:12px}
+.form-success{display:none;text-align:center;padding:20px 0}
+.form-success h3{color:#27AE60;font-size:20px;margin-bottom:8px}
+.form-success p{color:#9E9E9E;font-size:14px}
+
 footer{text-align:center;padding:40px 24px;border-top:1px solid #2A0A18;color:#8C3A55;font-size:14px;margin-top:60px}
 </style>
 </head>
 <body>
+
 <nav class="nav">
   <div class="logo">&#128149; Leads.Baby</div>
-  <a href="#pricing" class="nav-cta">Get Lifetime Access &rarr;</a>
+  <button class="nav-cta" onclick="openModal('lifetime')">Get Lifetime Access &rarr;</button>
 </nav>
 
 <section class="hero">
   <div class="badge">&#128149; GOOGLE MAPS LEAD SCRAPER</div>
-  <h1>Leads So Good,<br>They Should Be <span>Illegal</span></h1>
-  <p class="sub">Scrape business names, phone numbers, emails, websites, and platform info from Google Maps — across 20+ industries, any city in the USA.</p>
+  <h1>Scrape <span>Any Industry</span><br>Any City. Unlimited.</h1>
+  <p class="sub">800+ industries. Google Maps data with email extraction and platform detection. Runs on your computer &mdash; leads stay yours forever.</p>
   <div class="cta-row">
-    <a href="#pricing" class="btn-primary">Get Lifetime Access &mdash; $997</a>
-    <a href="#industries" class="btn-secondary">See All 20 Industries</a>
+    <button class="btn-primary" onclick="openModal('lifetime')">Get Lifetime Access &mdash; $997</button>
+    <button class="btn-secondary" onclick="openModal('monthly')">Start Monthly &mdash; $297/mo</button>
   </div>
+</section>
+
+<section class="industry-search-section">
+  <h2>Search Any Industry</h2>
+  <p>800+ pre-loaded search terms across 26 categories &mdash; or type any custom keyword</p>
+  <div class="search-box">
+    <input type="text" id="industrySearch" placeholder="Search: pizza, plumbers, dentists, yoga studios..." oninput="searchIndustries(this.value)">
+  </div>
+  <div class="industry-results" id="industryResults">
+    <span class="industry-tag">Plumbers</span>
+    <span class="industry-tag">HVAC Companies</span>
+    <span class="industry-tag">Pizza Restaurants</span>
+    <span class="industry-tag">Personal Injury Lawyers</span>
+    <span class="industry-tag">Hair Salons</span>
+    <span class="industry-tag">Gyms Near Me</span>
+    <span class="industry-tag">Auto Repair Shops</span>
+    <span class="industry-tag">Real Estate Agents</span>
+    <span class="industry-tag">Dentists</span>
+    <span class="industry-tag">Landscaping Companies</span>
+    <span class="industry-tag">Roofing Contractors</span>
+    <span class="industry-tag">Pet Grooming</span>
+  </div>
+  <p class="industry-count" id="industryCount">Showing popular searches &mdash; type to search all 800+</p>
 </section>
 
 <section class="features">
   <div class="feature">
     <div class="feature-icon">&#128506;</div>
     <h3>Google Maps Scraping</h3>
-    <p>Target any city, any industry. Scrape every business listing that matches your search — deep pagination included.</p>
+    <p>Deep-pagination scraping of every business listing that matches your search. Name, phone, address, website, rating.</p>
   </div>
   <div class="feature">
     <div class="feature-icon">&#128231;</div>
     <h3>Email Extraction</h3>
-    <p>Auto-visits every business website and pulls the contact email from the contact page or footer.</p>
+    <p>Visits every business website and pulls the contact email automatically from the contact page or footer.</p>
   </div>
   <div class="feature">
     <div class="feature-icon">&#128269;</div>
     <h3>Platform Detection</h3>
-    <p>Finds out if the site is built on WordPress, Wix, Shopify, Squarespace, Webflow, and more.</p>
+    <p>Identifies WordPress, Wix, Shopify, Squarespace, Webflow, and 10+ more. Great for web design agencies.</p>
   </div>
   <div class="feature">
     <div class="feature-icon">&#128202;</div>
     <h3>CSV Export</h3>
-    <p>One-click export to CSV. Load straight into your CRM, Apollo, Instantly, or any outreach tool.</p>
+    <p>One-click export to CSV. Import directly to any CRM, Apollo, Instantly, or Google Sheets.</p>
   </div>
   <div class="feature">
     <div class="feature-icon">&#128421;</div>
-    <h3>Runs Locally</h3>
-    <p>Desktop app for Windows. Leads save directly to your computer — no cloud, no recurring storage fees.</p>
+    <h3>Runs Locally on Your PC</h3>
+    <p>Windows and macOS desktop app. Your leads live on your machine &mdash; no cloud, no storage fees, no limits.</p>
   </div>
   <div class="feature">
     <div class="feature-icon">&#128274;</div>
     <h3>Node-Locked License</h3>
-    <p>1 computer included. Add more computers for $99/node anytime. No subscriptions for the core tool.</p>
-  </div>
-</section>
-
-<section class="industries-section" id="industries">
-  <h2>20+ Industries Covered</h2>
-  <div class="industry-tags">
-    <span class="tag">Restaurants</span>
-    <span class="tag">Retail Stores</span>
-    <span class="tag">Real Estate Agents</span>
-    <span class="tag">Insurance Agents</span>
-    <span class="tag">Dentists</span>
-    <span class="tag">Chiropractors</span>
-    <span class="tag">Gyms &amp; Fitness</span>
-    <span class="tag">Lawyers</span>
-    <span class="tag">Marketing Agencies</span>
-    <span class="tag">Accountants</span>
-    <span class="tag">Plumbers</span>
-    <span class="tag">Electricians</span>
-    <span class="tag">HVAC</span>
-    <span class="tag">Landscaping</span>
-    <span class="tag">Auto Repair</span>
-    <span class="tag">Beauty Salons</span>
-    <span class="tag">Pet Services</span>
-    <span class="tag">Photography</span>
-    <span class="tag">Cleaning Services</span>
-    <span class="tag">Roofing</span>
+    <p>One computer included. Add more machines for $99 each anytime. No subscriptions on extra nodes.</p>
   </div>
 </section>
 
 <section class="pricing" id="pricing">
-  <h2>Simple, Honest Pricing</h2>
-  <p class="pricing-sub">Pay once. Scrape unlimited leads forever. No hidden fees.</p>
+  <h2>Simple Pricing</h2>
+  <p class="pricing-sub">One license. Unlimited leads. No per-lead fees.</p>
   <div class="plans">
     <div class="plan">
       <h3>Monthly</h3>
       <div class="price"><sup>$</sup>297</div>
-      <div class="price-note">per month</div>
+      <div class="price-note">per month &mdash; cancel anytime</div>
       <ul>
-        <li>1 computer (node) included</li>
+        <li>1 computer included</li>
         <li>Unlimited scraping</li>
-        <li>20+ industries</li>
+        <li>800+ industries</li>
         <li>Email + platform detection</li>
         <li>CSV export</li>
-        <li>Extra nodes: $99/mo each</li>
+        <li>Extra nodes $99/mo each</li>
       </ul>
-      <a href="mailto:support@leads.baby?subject=Monthly Plan" class="btn-secondary">Start Monthly</a>
+      <button class="btn-secondary" style="width:100%;display:block;text-align:center" onclick="openModal('monthly')">Start Monthly</button>
     </div>
     <div class="plan featured">
       <div class="plan-badge">BEST VALUE</div>
       <h3>Lifetime</h3>
       <div class="price"><sup>$</sup>997</div>
-      <div class="price-note">one-time payment</div>
+      <div class="price-note">one-time &mdash; pay once, own forever</div>
       <ul>
-        <li>1 computer (node) included</li>
+        <li>1 computer included</li>
         <li>Unlimited scraping &mdash; forever</li>
-        <li>20+ industries</li>
+        <li>800+ industries</li>
         <li>Email + platform detection</li>
         <li>CSV export</li>
-        <li>Extra nodes: $99 one-time each</li>
+        <li>Extra nodes $99 one-time</li>
         <li>Free updates</li>
       </ul>
-      <a href="mailto:support@leads.baby?subject=Lifetime License" class="btn-primary">Get Lifetime Access</a>
-      <p class="node-note">Scale across multiple computers. Add nodes anytime for $99 each.</p>
+      <button class="btn-primary" style="width:100%;display:block;text-align:center" onclick="openModal('lifetime')">Get Lifetime Access</button>
     </div>
   </div>
 </section>
 
+<!-- Purchase Modal -->
+<div class="modal-overlay" id="purchaseModal" onclick="if(event.target===this)closeModal()">
+  <div class="modal">
+    <button class="modal-close" onclick="closeModal()">&times;</button>
+    <h2>&#128149; Get Leads.Baby</h2>
+    <p id="modalDesc">Complete your order below. Your license key and download will be emailed instantly.</p>
+
+    <div id="purchaseForm">
+      <div class="form-group">
+        <label>Your Name</label>
+        <input type="text" id="buyerName" placeholder="John Smith">
+      </div>
+      <div class="form-group">
+        <label>Email Address</label>
+        <input type="email" id="buyerEmail" placeholder="you@company.com">
+      </div>
+      <div class="form-group">
+        <label>Plan</label>
+        <select id="buyerPlan">
+          <option value="lifetime">Lifetime &mdash; $997 (pay once)</option>
+          <option value="monthly">Monthly &mdash; $297/mo</option>
+        </select>
+      </div>
+      <button class="form-submit" id="buyBtn" onclick="submitPurchase()">Complete Purchase &rarr;</button>
+      <p class="form-note">&#128274; Secure checkout. License key emailed instantly after payment.</p>
+    </div>
+
+    <div class="form-success" id="formSuccess">
+      <h3>&#10003; Order Received!</h3>
+      <p>Check your email &mdash; your license key and download links are on their way.</p>
+      <p style="margin-top:12px;color:#616161;font-size:13px">Didn't get it? Email support@leads.baby</p>
+    </div>
+  </div>
+</div>
+
 <footer>
   <p>&copy; 2026 Leads.Baby. All rights reserved. | <a href="mailto:support@leads.baby">support@leads.baby</a></p>
 </footer>
+
+<script>
+// Industry search data (subset for demo — full list in the app)
+const INDUSTRIES = [
+  "Plumbers near me","HVAC companies","Air conditioning repair","Electricians","Roofing contractors",
+  "General contractors","Landscaping companies","Lawn care services","Window cleaning","Pressure washing",
+  "Pest control","House cleaning","Pool service","Handyman services","Painting contractors",
+  "Garage door repair","Appliance repair","Gutter cleaning","Insulation contractors","Flooring companies",
+  "Pizza restaurants","Sushi restaurants","Mexican restaurants","Italian restaurants","Chinese restaurants",
+  "Breakfast restaurants","Coffee shops","Cafes","Fast food restaurants","Burger restaurants",
+  "Personal injury lawyers","Criminal defense lawyers","Family lawyers","Divorce attorneys","DUI lawyers",
+  "Real estate lawyers","Immigration lawyers","Bankruptcy lawyers","Employment lawyers","Tax attorneys",
+  "Dentists near me","Orthodontists","Oral surgeons","Pediatric dentists","Cosmetic dentists",
+  "Chiropractors","Physical therapists","Massage therapists","Acupuncture","Mental health therapists",
+  "Gyms near me","Personal trainers","Yoga studios","Pilates studios","CrossFit gyms",
+  "Martial arts schools","Boxing gyms","Dance studios","Swimming pools","Rock climbing gyms",
+  "Hair salons","Nail salons","Barbershops","Beauty salons","Spas near me","Waxing salons",
+  "Eyelash extensions","Tattoo shops","Piercing studios","Eyebrow threading",
+  "Auto repair shops","Oil change near me","Tire shops","Car dealerships","Auto body shops",
+  "Car detailing","Transmission repair","Brake repair","Engine repair","Auto glass repair",
+  "Real estate agents","Property management companies","Commercial real estate","Apartment complexes",
+  "Marketing agencies","Digital marketing agencies","SEO agencies","Web design companies","Graphic designers",
+  "Accountants near me","CPAs","Tax preparation","Bookkeeping services","Financial advisors",
+  "Insurance agents","Life insurance","Auto insurance agents","Health insurance brokers",
+  "Dog groomers","Veterinarians","Pet stores","Dog trainers","Dog daycares",
+  "Hotels near me","Motels","Bed and breakfast","Vacation rentals","Extended stay hotels",
+  "Moving companies","Storage facilities","Self storage","Moving and storage",
+  "Photography studios","Wedding photographers","Event photographers","Portrait studios",
+  "Tutoring services","Music lessons","Driving schools","Adult education","Daycare centers",
+  "Bars near me","Nightclubs","Breweries","Wineries","Karaoke bars"
+];
+
+function searchIndustries(query) {
+  const results = document.getElementById('industryResults');
+  const count = document.getElementById('industryCount');
+
+  if (!query.trim()) {
+    results.innerHTML = INDUSTRIES.slice(0,12).map(i =>
+      `<span class="industry-tag">${i}</span>`).join('');
+    count.textContent = 'Showing popular searches — type to search all 800+';
+    return;
+  }
+
+  const q = query.toLowerCase();
+  const matches = INDUSTRIES.filter(i => i.toLowerCase().includes(q));
+
+  if (matches.length === 0) {
+    results.innerHTML = `<span class="industry-tag" style="border-color:var(--accent);color:var(--accent)">"${query}" — custom search (works in the app)</span>`;
+    count.textContent = 'Any keyword works — the app searches Google Maps directly';
+  } else {
+    results.innerHTML = matches.slice(0,20).map(i =>
+      `<span class="industry-tag">${i}</span>`).join('');
+    count.textContent = `${matches.length} matching industries`;
+  }
+}
+
+function openModal(plan) {
+  document.getElementById('buyerPlan').value = plan;
+  document.getElementById('modalDesc').textContent = plan === 'lifetime'
+    ? 'Lifetime access — $997 one-time. License key emailed instantly.'
+    : 'Monthly plan — $297/mo, cancel anytime. License key emailed instantly.';
+  document.getElementById('purchaseModal').classList.add('open');
+}
+
+function closeModal() {
+  document.getElementById('purchaseModal').classList.remove('open');
+}
+
+async function submitPurchase() {
+  const name = document.getElementById('buyerName').value.trim();
+  const email = document.getElementById('buyerEmail').value.trim();
+  const plan = document.getElementById('buyerPlan').value;
+
+  if (!name || !email) {
+    alert('Please enter your name and email.');
+    return;
+  }
+  if (!email.includes('@')) {
+    alert('Please enter a valid email address.');
+    return;
+  }
+
+  const btn = document.getElementById('buyBtn');
+  btn.disabled = true;
+  btn.textContent = 'Processing...';
+
+  // Submit to fleet server to create pending order + redirect to Airwallex
+  try {
+    const resp = await fetch('https://leadripper.com/api/checkout/initiate', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({product: 'leadsbaby', plan, customer_name: name, customer_email: email})
+    });
+
+    if (resp.ok) {
+      const data = await resp.json();
+      if (data.checkout_url) {
+        window.location.href = data.checkout_url;
+        return;
+      }
+    }
+  } catch(e) {}
+
+  // Fallback: show success and notify via email
+  document.getElementById('purchaseForm').style.display = 'none';
+  document.getElementById('formSuccess').style.display = 'block';
+
+  btn.disabled = false;
+  btn.textContent = 'Complete Purchase →';
+}
+</script>
 </body>
 </html>

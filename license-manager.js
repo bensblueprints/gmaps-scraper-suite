@@ -230,6 +230,52 @@ module.exports = function(app, db, isValidLicenseKey, requireAdmin) {
     res.json({ ok: true, sent_to: lic.customer_email });
   });
 
+  // Checkout initiate — capture lead info, notify admin, return pending status
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS pending_orders (
+      id             INTEGER PRIMARY KEY AUTOINCREMENT,
+      product        TEXT NOT NULL,
+      plan           TEXT NOT NULL,
+      customer_email TEXT NOT NULL,
+      customer_name  TEXT,
+      created_at     INTEGER DEFAULT (strftime('%s','now')),
+      notified       INTEGER DEFAULT 0
+    );
+  `);
+
+  app.post('/api/checkout/initiate', (req, res) => {
+    const { product = 'leadsbaby', plan = 'lifetime',
+            customer_email = '', customer_name = '' } = req.body || {};
+    if (!customer_email || !customer_email.includes('@')) {
+      return res.status(400).json({ error: 'valid email required' });
+    }
+    const info = PRODUCT_INFO[product] || PRODUCT_INFO['leadsbaby'];
+    const planLabel = plan === 'lifetime' ? 'Lifetime ($997)' : 'Monthly ($297/mo)';
+
+    db.prepare(`INSERT INTO pending_orders (product, plan, customer_email, customer_name) VALUES (?,?,?,?)`)
+      .run(product, plan, customer_email, customer_name || customer_email.split('@')[0]);
+
+    // Notify admin
+    if (RESEND_API_KEY) {
+      const payload = JSON.stringify({
+        from: `${info.name} Orders <noreply@benjisaiempire.com>`,
+        to: ['ben@advancedmarketing.co'],
+        subject: `New Order: ${info.name} ${planLabel} — ${customer_email}`,
+        html: `<p>New purchase request:</p><ul><li><b>Product:</b> ${info.name}</li><li><b>Plan:</b> ${planLabel}</li><li><b>Email:</b> ${customer_email}</li><li><b>Name:</b> ${customer_name || '—'}</li></ul><p>Create their license manually or set up Airwallex payment links.</p>`,
+      });
+      const req2 = https.request({
+        hostname: 'api.resend.com', path: '/emails', method: 'POST',
+        headers: { 'Authorization': 'Bearer ' + RESEND_API_KEY, 'Content-Type': 'application/json', 'Content-Length': Buffer.byteLength(payload) },
+      }, (r) => { let d = ''; r.on('data', x => d += x); r.on('end', () => console.log('[ORDER] Admin notified:', r.statusCode)); });
+      req2.on('error', e => console.error('[ORDER] Email error:', e.message));
+      req2.write(payload);
+      req2.end();
+    }
+
+    console.log(`[ORDER] ${product} ${plan} from ${customer_email}`);
+    res.json({ ok: true, pending: true, message: 'Order received — check your email shortly.' });
+  });
+
   // Airwallex webhook — auto-create license on successful payment
   app.post('/api/webhook/airwallex', (req, res) => {
     const body = req.body || {};

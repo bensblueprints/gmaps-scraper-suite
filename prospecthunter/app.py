@@ -2,6 +2,7 @@
 ProspectHunter — desktop application
 Scrapes Google Maps, detects website platform, extracts emails.
 """
+import re
 import sys
 import os
 import socket
@@ -291,31 +292,51 @@ class LeftPanel(ctk.CTkFrame):
     def _build_industry_section(self):
         hdr = ctk.CTkFrame(self, fg_color="transparent")
         hdr.grid(row=0, column=0, sticky="ew", padx=8, pady=(10, 0))
-        ctk.CTkLabel(hdr, text="INDUSTRIES",
+
+        top = ctk.CTkFrame(hdr, fg_color="transparent")
+        top.pack(fill="x")
+        ctk.CTkLabel(top, text="INDUSTRIES",
                       font=ctk.CTkFont(size=11, weight="bold"),
                       text_color="#7B6F8C").pack(side="left")
-        ctk.CTkButton(hdr, text="All",  width=38, height=22,
+        ctk.CTkButton(top, text="All",  width=38, height=22,
                        fg_color="#8E44AD", hover_color="#7D3C98",
                        command=lambda: self._select_all(True)).pack(side="right", padx=2)
-        ctk.CTkButton(hdr, text="None", width=42, height=22,
+        ctk.CTkButton(top, text="None", width=42, height=22,
                        fg_color="#8E44AD", hover_color="#7D3C98",
                        command=lambda: self._select_all(False)).pack(side="right")
+
+        self.industry_filter_var = tk.StringVar()
+        self.industry_filter_var.trace_add("write", lambda *_: self._filter_industries())
+        ctk.CTkEntry(hdr, textvariable=self.industry_filter_var,
+                      placeholder_text="Filter industries...",
+                      height=24, font=ctk.CTkFont(size=10)).pack(fill="x", pady=(4, 0))
 
         scroll = ctk.CTkScrollableFrame(self, fg_color="#1E1628", label_text="")
         scroll.grid(row=1, column=0, sticky="ew", padx=8, pady=(4, 0))
 
         self.industry_vars: dict[str, tk.BooleanVar] = {}
+        self._industry_checkboxes: dict[str, ctk.CTkCheckBox] = {}
         for name, info in INDUSTRIES.items():
             var = tk.BooleanVar(value=False)
-            ctk.CTkCheckBox(scroll, text=name, variable=var,
-                             font=ctk.CTkFont(size=12),
-                             checkmark_color=info["color"],
-                             border_color=info["color"]).pack(anchor="w", padx=8, pady=2)
+            cb = ctk.CTkCheckBox(scroll, text=name, variable=var,
+                                  font=ctk.CTkFont(size=12),
+                                  checkmark_color=info["color"],
+                                  border_color=info["color"])
+            cb.pack(anchor="w", padx=8, pady=2)
             self.industry_vars[name] = var
+            self._industry_checkboxes[name] = cb
 
     def _select_all(self, val: bool):
         for v in self.industry_vars.values():
             v.set(val)
+
+    def _filter_industries(self):
+        q = self.industry_filter_var.get().lower().strip()
+        for name, cb in self._industry_checkboxes.items():
+            if not q or q in name.lower():
+                cb.pack(anchor="w", padx=8, pady=2)
+            else:
+                cb.pack_forget()
 
     def _build_config_section(self):
         cfg = ctk.CTkFrame(self, fg_color="#1E1628")
@@ -331,9 +352,17 @@ class LeftPanel(ctk.CTkFrame):
             ctk.CTkEntry(f, textvariable=var, width=64).pack(side="right")
             return var
 
-        ctk.CTkLabel(cfg, text="LOCATION",
+        ctk.CTkLabel(cfg, text="CUSTOM KEYWORD",
                       font=ctk.CTkFont(size=11, weight="bold"),
                       text_color="#7B6F8C").pack(anchor="w", padx=10, pady=(10, 2))
+        self.custom_var = tk.StringVar()
+        ctk.CTkEntry(cfg, textvariable=self.custom_var,
+                      placeholder_text="e.g. yoga studios, dog groomers",
+                      height=30).pack(fill="x", padx=8, pady=(0, 6))
+
+        ctk.CTkLabel(cfg, text="LOCATION",
+                      font=ctk.CTkFont(size=11, weight="bold"),
+                      text_color="#7B6F8C").pack(anchor="w", padx=10, pady=(4, 2))
         self.location_var = tk.StringVar(value="Las Vegas, NV")
         ctk.CTkEntry(cfg, textvariable=self.location_var,
                       placeholder_text="City, State").pack(fill="x", padx=8, pady=(0, 6))
@@ -379,13 +408,17 @@ class LeftPanel(ctk.CTkFrame):
 
     @property
     def config(self) -> dict:
+        industries = [n for n, v in self.industry_vars.items() if v.get()]
+        custom = self.custom_var.get().strip()
+        if custom:
+            industries = industries + [custom]
         return {
             "location":      self.location_var.get().strip(),
             "depth":         int(self.depth_var.get() or 5),
             "concurrency":   int(self.workers_var.get() or 4),
             "extract_email": self.email_var.get(),
             "fast":          self.platform_var.get(),
-            "industries":    [n for n, v in self.industry_vars.items() if v.get()],
+            "industries":    industries,
         }
 
 
@@ -496,7 +529,7 @@ class App(ctk.CTk):
     def _start(self):
         cfg = self.left.config
         if not cfg["industries"]:
-            messagebox.showwarning("No Industry", "Select at least one industry.")
+            messagebox.showwarning("No Industry", "Select at least one industry or enter a custom keyword.")
             return
         if not cfg["location"]:
             messagebox.showerror("Location Required", "Enter a city/state.")
@@ -513,6 +546,8 @@ class App(ctk.CTk):
         self._thread.start()
 
     def _run_jobs(self, cfg: dict):
+        leads_folder = Path.home() / "Documents" / "ProspectHunter Leads"
+        leads_folder.mkdir(parents=True, exist_ok=True)
         for industry in cfg["industries"]:
             if self.engine._stop_event.is_set():
                 break
@@ -528,6 +563,11 @@ class App(ctk.CTk):
                 extract_email=cfg["extract_email"],
                 on_lead=self._on_new_lead,
             )
+            safe = re.sub(r'[^\w\s-]', '', industry).strip().replace(' ', '_')
+            csv_path = leads_folder / f"{safe}_leads.csv"
+            n = lead_db.export_industry_csv(industry, str(csv_path))
+            if n:
+                self._log(f"[CSV] {n} leads → {csv_path}")
         self.after(0, self._done)
 
     def _on_new_lead(self, lead: dict):

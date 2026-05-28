@@ -164,5 +164,24 @@ def export_csv(path: str) -> int:
     return len(rows)
 
 
+def export_industry_csv(industry: str, path: str) -> int:
+    """Write leads for a specific industry to CSV (append-or-create). Returns row count."""
+    with _lock:
+        c = _conn()
+        try:
+            rows = [dict(r) for r in c.execute(
+                "SELECT * FROM leads WHERE industry = ? ORDER BY id DESC", (industry,)
+            ).fetchall()]
+        finally:
+            c.close()
+    if not rows:
+        return 0
+    with open(path, 'w', newline='', encoding='utf-8') as f:
+        w = csv.DictWriter(f, fieldnames=EXPORT_FIELDS, extrasaction='ignore')
+        w.writeheader()
+        w.writerows(rows)
+    return len(rows)
+
+
 # Auto-init on import
 init()
