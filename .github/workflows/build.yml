@@ -1,0 +1,158 @@
+name: Build All Products
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+jobs:
+  build-windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          pip install customtkinter playwright pyinstaller requests
+          playwright install chromium
+
+      - name: Build all Windows EXEs
+        shell: cmd
+        run: |
+          for /f "delims=" %%P in ('python -c "import customtkinter, os; print(os.path.dirname(customtkinter.__file__))"') do set CTK=%%P
+          for /f "delims=" %%P in ('python -c "import playwright, os; print(os.path.dirname(playwright.__file__))"') do set PWL=%%P
+
+          pyinstaller --onefile --windowed --noconfirm --name "LeadScraperPro" --add-data "%CTK%;customtkinter" --add-data "%PWL%;playwright" --paths "." --paths "scraper_node" --collect-all "playwright" --hidden-import "shared" --hidden-import "shared.config" --hidden-import "shared.machine_id" --hidden-import "engine" --hidden-import "industries" --hidden-import "gmaps_scraper" --hidden-import "tkinter" --hidden-import "tkinter.ttk" "scraper_node\app.py"
+
+          pyinstaller --onefile --windowed --noconfirm --name "Discovery1" --add-data "%CTK%;customtkinter" --add-data "%PWL%;playwright" --paths "." --paths "scraper_node" --collect-all "playwright" --hidden-import "shared" --hidden-import "shared.config" --hidden-import "shared.machine_id" --hidden-import "discovery1.industries" --hidden-import "engine" --hidden-import "tkinter" --hidden-import "tkinter.ttk" "discovery1\app.py"
+
+          pyinstaller --onefile --windowed --noconfirm --name "ProspectHunter" --add-data "%CTK%;customtkinter" --add-data "%PWL%;playwright" --paths "." --paths "scraper_node" --collect-all "playwright" --hidden-import "shared" --hidden-import "shared.config" --hidden-import "shared.machine_id" --hidden-import "prospecthunter.industries" --hidden-import "engine" --hidden-import "tkinter" --hidden-import "tkinter.ttk" "prospecthunter\app.py"
+
+          pyinstaller --onefile --windowed --noconfirm --name "AtomicScraper" --add-data "%CTK%;customtkinter" --add-data "%PWL%;playwright" --paths "." --paths "scraper_node" --collect-all "playwright" --hidden-import "shared" --hidden-import "shared.config" --hidden-import "shared.machine_id" --hidden-import "atomicscraper.industries" --hidden-import "engine" --hidden-import "tkinter" --hidden-import "tkinter.ttk" "atomicscraper\app.py"
+
+          pyinstaller --onefile --windowed --noconfirm --name "LeadsBaby" --add-data "%CTK%;customtkinter" --add-data "%PWL%;playwright" --paths "." --paths "scraper_node" --collect-all "playwright" --hidden-import "shared" --hidden-import "shared.config" --hidden-import "shared.machine_id" --hidden-import "leadsbaby.industries" --hidden-import "engine" --hidden-import "tkinter" --hidden-import "tkinter.ttk" "leadsbaby\app.py"
+
+      - name: Upload Windows artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-builds
+          path: dist/*.exe
+          retention-days: 90
+
+  build-macos:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          pip install customtkinter playwright pyinstaller requests
+          playwright install chromium
+
+      - name: Build all macOS apps
+        run: |
+          CTK=$(python -c "import customtkinter, os; print(os.path.dirname(customtkinter.__file__))")
+          PWL=$(python -c "import playwright, os; print(os.path.dirname(playwright.__file__))")
+
+          for PRODUCT in "LeadScraperPro:scraper_node/app.py:scraper_node:shared.machine_id engine industries gmaps_scraper" \
+                         "Discovery1:discovery1/app.py:scraper_node:discovery1.industries" \
+                         "ProspectHunter:prospecthunter/app.py:scraper_node:prospecthunter.industries" \
+                         "AtomicScraper:atomicscraper/app.py:scraper_node:atomicscraper.industries" \
+                         "LeadsBaby:leadsbaby/app.py:scraper_node:leadsbaby.industries"; do
+            NAME=$(echo $PRODUCT | cut -d: -f1)
+            ENTRY=$(echo $PRODUCT | cut -d: -f2)
+            EXTRA_PATH=$(echo $PRODUCT | cut -d: -f3)
+            echo "Building $NAME..."
+            pyinstaller --onefile --windowed --noconfirm \
+              --name "$NAME" \
+              --add-data "$CTK:customtkinter" \
+              --add-data "$PWL:playwright" \
+              --paths "." \
+              --paths "$EXTRA_PATH" \
+              --collect-all "playwright" \
+              --hidden-import "shared" \
+              --hidden-import "shared.config" \
+              --hidden-import "shared.machine_id" \
+              --hidden-import "engine" \
+              --hidden-import "tkinter" \
+              --hidden-import "tkinter.ttk" \
+              "$ENTRY"
+          done
+
+      - name: Package as DMGs
+        run: |
+          pip install dmgbuild
+          mkdir -p dmg_out
+          for APP in dist/*.app; do
+            NAME=$(basename "$APP" .app)
+            echo "Creating DMG for $NAME..."
+            dmgbuild -s /dev/null "$NAME" "dmg_out/${NAME}.dmg" \
+              "app=$APP" 2>/dev/null || \
+            hdiutil create -volname "$NAME" -srcfolder "$APP" \
+              -ov -format UDZO "dmg_out/${NAME}.dmg"
+          done
+          ls -lh dmg_out/
+
+      - name: Upload macOS artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: macos-builds
+          path: dmg_out/*.dmg
+          retention-days: 90
+
+  release:
+    needs: [build-windows, build-macos]
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/')
+    permissions:
+      contents: write
+    steps:
+      - name: Download Windows builds
+        uses: actions/download-artifact@v4
+        with:
+          name: windows-builds
+          path: artifacts/windows
+
+      - name: Download macOS builds
+        uses: actions/download-artifact@v4
+        with:
+          name: macos-builds
+          path: artifacts/macos
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            artifacts/windows/*.exe
+            artifacts/macos/*.dmg
+          body: |
+            ## Downloads
+
+            ### Windows
+            | Product | Download |
+            |---|---|
+            | Lead Scraper Pro | LeadScraperPro.exe |
+            | Discovery1 | Discovery1.exe |
+            | ProspectHunter | ProspectHunter.exe |
+            | AtomicScraper | AtomicScraper.exe |
+            | Leads.Baby | LeadsBaby.exe |
+
+            ### macOS
+            | Product | Download |
+            |---|---|
+            | Lead Scraper Pro | LeadScraperPro.dmg |
+            | Discovery1 | Discovery1.dmg |
+            | ProspectHunter | ProspectHunter.dmg |
+            | AtomicScraper | AtomicScraper.dmg |
+            | Leads.Baby | LeadsBaby.dmg |
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
