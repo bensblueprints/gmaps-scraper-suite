@@ -164,6 +164,19 @@ def export_csv(path: str) -> int:
     return len(rows)
 
 
+def get_by_industry(industry: str) -> list:
+    """Return all leads for a specific industry as list of dicts."""
+    with _lock:
+        c = _conn()
+        try:
+            rows = c.execute(
+                "SELECT * FROM leads WHERE industry = ? ORDER BY id DESC", (industry,)
+            ).fetchall()
+            return [dict(r) for r in rows]
+        finally:
+            c.close()
+
+
 def export_industry_csv(industry: str, path: str) -> int:
     """Write leads for a specific industry to CSV (append-or-create). Returns row count."""
     with _lock:

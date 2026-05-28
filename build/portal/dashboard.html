@@ -1,0 +1,405 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dashboard — Customer Portal</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{--accent:#4FC3F7;--bg:#0D0D0D;--panel:#111;--border:#1E1E1E;--text:#E0E0E0;--muted:#9E9E9E}
+body{background:var(--bg);color:var(--text);font-family:'Segoe UI',system-ui,sans-serif;min-height:100vh}
+
+/* Header */
+.header{background:#0A0A0A;border-bottom:1px solid var(--border);padding:0 32px;display:flex;align-items:center;justify-content:space-between;height:56px;position:sticky;top:0;z-index:100}
+.header-brand{font-size:17px;font-weight:800;color:var(--accent)}
+.header-right{display:flex;align-items:center;gap:16px}
+.header-email{font-size:13px;color:var(--muted)}
+.signout{font-size:13px;color:var(--accent);cursor:pointer;background:none;border:none}
+
+/* Layout */
+.main{max-width:1200px;margin:0 auto;padding:32px 24px}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px;margin-bottom:32px}
+
+/* Stat cards */
+.stat{background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:20px 24px}
+.stat-label{font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin-bottom:8px}
+.stat-value{font-size:32px;font-weight:800;color:var(--accent);line-height:1}
+.stat-sub{font-size:12px;color:var(--muted);margin-top:4px}
+
+/* Section */
+.section{background:var(--panel);border:1px solid var(--border);border-radius:12px;margin-bottom:24px;overflow:hidden}
+.section-header{padding:16px 24px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.section-title{font-size:14px;font-weight:700;color:var(--text);letter-spacing:.03em}
+.section-body{padding:20px 24px}
+
+/* Downloads */
+.dl-row{display:flex;gap:12px;flex-wrap:wrap}
+.dl-btn{display:inline-flex;align-items:center;gap:8px;padding:12px 20px;border-radius:8px;font-size:14px;font-weight:700;text-decoration:none;transition:.15s;cursor:pointer;border:none}
+.dl-btn.primary{background:var(--accent);color:#000}
+.dl-btn.secondary{background:transparent;border:1.5px solid var(--border);color:var(--text)}
+.dl-btn:hover{opacity:.85;transform:translateY(-1px)}
+
+/* License key */
+.license-box{background:#0A0A0A;border:1px solid var(--border);border-radius:8px;padding:16px 20px;font-family:monospace;font-size:18px;letter-spacing:.12em;color:var(--accent);font-weight:700;cursor:pointer;user-select:all;display:flex;align-items:center;justify-content:space-between;gap:12px}
+.copy-hint{font-size:11px;color:var(--muted);font-family:sans-serif;letter-spacing:0;font-weight:400}
+
+/* Nodes */
+.node-row{display:flex;align-items:center;justify-content:space-between;padding:12px 0;border-bottom:1px solid var(--border)}
+.node-row:last-child{border-bottom:none}
+.node-info{display:flex;flex-direction:column;gap:2px}
+.node-id{font-family:monospace;font-size:13px;color:var(--accent)}
+.node-meta{font-size:12px;color:var(--muted)}
+.remove-btn{background:transparent;border:1px solid #E74C3C;color:#E74C3C;padding:5px 12px;border-radius:6px;font-size:12px;cursor:pointer;transition:.15s}
+.remove-btn:hover{background:#E74C3C;color:#fff}
+.empty-note{color:var(--muted);font-size:14px;padding:4px 0}
+
+/* Leads */
+.toolbar{display:flex;gap:10px;flex-wrap:wrap}
+.toolbar input,.toolbar select{padding:8px 12px;background:#0A0A0A;border:1px solid var(--border);border-radius:7px;color:var(--text);font-size:13px;outline:none;min-width:160px}
+.toolbar input:focus,.toolbar select:focus{border-color:var(--accent)}
+.toolbar-btn{padding:8px 16px;background:var(--accent);color:#000;border:none;border-radius:7px;font-size:13px;font-weight:700;cursor:pointer;transition:.15s;white-space:nowrap}
+.toolbar-btn:hover{opacity:.85}
+.toolbar-btn.ghost{background:transparent;border:1px solid var(--border);color:var(--text)}
+
+.table-wrap{overflow-x:auto;margin-top:16px}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th{text-align:left;padding:8px 12px;color:var(--muted);font-size:11px;letter-spacing:.08em;text-transform:uppercase;border-bottom:1px solid var(--border);white-space:nowrap}
+td{padding:10px 12px;border-bottom:1px solid #161616;vertical-align:top;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+tr:hover td{background:#0F0F0F}
+.badge{display:inline-block;padding:2px 8px;border-radius:100px;font-size:11px;font-weight:600;background:rgba(79,195,247,.1);color:var(--accent)}
+
+/* Pagination */
+.pagination{display:flex;gap:8px;align-items:center;justify-content:flex-end;padding:16px 0 0;font-size:13px;color:var(--muted)}
+.pg-btn{padding:5px 12px;border:1px solid var(--border);border-radius:6px;background:none;color:var(--text);cursor:pointer;font-size:13px}
+.pg-btn:disabled{opacity:.35;cursor:not-allowed}
+
+/* Loading / auth */
+#loadingScreen{position:fixed;inset:0;background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;z-index:999}
+.spinner{width:36px;height:36px;border:3px solid #1E1E1E;border-top-color:var(--accent);border-radius:50%;animation:spin .8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.error-box{max-width:400px;text-align:center;padding:32px}
+.error-box h2{color:#E74C3C;margin-bottom:12px}
+.error-box p{color:var(--muted);font-size:14px;margin-bottom:20px}
+</style>
+</head>
+<body>
+
+<div id="loadingScreen">
+  <div class="spinner" id="spinner"></div>
+  <div style="color:var(--muted);font-size:14px" id="loadingMsg">Verifying…</div>
+  <div class="error-box" id="errorBox" style="display:none">
+    <h2>Session expired</h2>
+    <p>Your login link expired or is invalid. Please sign in again.</p>
+    <a class="dl-btn primary" id="loginAgainBtn" href="/login.html">Sign In</a>
+  </div>
+</div>
+
+<div id="app" style="display:none">
+  <header class="header">
+    <div class="header-brand" id="headerBrand">Dashboard</div>
+    <div class="header-right">
+      <span class="header-email" id="headerEmail"></span>
+      <button class="signout" onclick="signOut()">Sign out</button>
+    </div>
+  </header>
+
+  <main class="main">
+    <!-- Stats -->
+    <div class="grid">
+      <div class="stat"><div class="stat-label">Cloud Leads</div><div class="stat-value" id="statLeads">—</div><div class="stat-sub">synced from app</div></div>
+      <div class="stat"><div class="stat-label">Plan</div><div class="stat-value" id="statPlan" style="font-size:20px;padding-top:6px">—</div><div class="stat-sub" id="statPlanSub"></div></div>
+      <div class="stat"><div class="stat-label">Nodes</div><div class="stat-value" id="statNodes">—</div><div class="stat-sub" id="statNodeSub"></div></div>
+    </div>
+
+    <!-- License + Downloads -->
+    <div class="section">
+      <div class="section-header">
+        <span class="section-title">License &amp; Downloads</span>
+      </div>
+      <div class="section-body">
+        <div style="margin-bottom:16px">
+          <div style="font-size:12px;color:var(--muted);margin-bottom:8px;letter-spacing:.08em;text-transform:uppercase">Your License Key</div>
+          <div class="license-box" id="licenseKey" onclick="copyKey()" title="Click to copy">
+            <span id="keyText">loading…</span>
+            <span class="copy-hint" id="copyHint">click to copy</span>
+          </div>
+        </div>
+        <div class="dl-row">
+          <a class="dl-btn primary" id="dlWindows" href="#" download>&#8659; Windows (.exe)</a>
+          <a class="dl-btn secondary" id="dlMac" href="#" download>&#8659; macOS (.dmg)</a>
+        </div>
+      </div>
+    </div>
+
+    <!-- Registered Nodes -->
+    <div class="section">
+      <div class="section-header">
+        <span class="section-title">Registered Computers</span>
+        <span id="nodeSlotInfo" style="font-size:12px;color:var(--muted)"></span>
+      </div>
+      <div class="section-body" id="nodesBody">
+        <div class="empty-note">Loading…</div>
+      </div>
+    </div>
+
+    <!-- Cloud Leads -->
+    <div class="section">
+      <div class="section-header">
+        <span class="section-title">Cloud Leads</span>
+        <div style="display:flex;gap:8px">
+          <button class="toolbar-btn ghost" onclick="exportLeads()">Export CSV</button>
+        </div>
+      </div>
+      <div class="section-body">
+        <div class="toolbar">
+          <input type="text" id="searchInput" placeholder="Search name, city, email…" oninput="debouncedSearch()">
+          <select id="industryFilter" onchange="loadLeads(1)">
+            <option value="">All Industries</option>
+          </select>
+          <button class="toolbar-btn" onclick="loadLeads(1)">Search</button>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Name</th><th>Phone</th><th>Email</th><th>Platform</th>
+                <th>Industry</th><th>City</th><th>Website</th><th>Rating</th>
+              </tr>
+            </thead>
+            <tbody id="leadsBody">
+              <tr><td colspan="8" style="text-align:center;padding:32px;color:var(--muted)">Leads sync automatically after each scrape in the desktop app.</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="pagination">
+          <span id="pageInfo" style="flex:1"></span>
+          <button class="pg-btn" id="prevBtn" onclick="loadLeads(currentPage-1)" disabled>&larr; Prev</button>
+          <button class="pg-btn" id="nextBtn" onclick="loadLeads(currentPage+1)" disabled>Next &rarr;</button>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<script>
+const FLEET   = 'https://leadripper.com';
+const JWT_KEY = 'portal_jwt_v1';
+
+let me = null;
+let currentPage = 1;
+let searchTimer = null;
+
+// ── Auth / boot ───────────────────────────────────────────────────────────────
+
+const params      = new URLSearchParams(window.location.search);
+const magicToken  = params.get('t');
+
+async function boot() {
+  if (magicToken) {
+    // Verify the magic token from the email link
+    try {
+      const r = await fetch(`${FLEET}/api/portal/verify-token?t=${magicToken}`);
+      const d = await r.json();
+      if (!d.jwt) throw new Error(d.error || 'invalid token');
+      localStorage.setItem(JWT_KEY, d.jwt);
+      window.history.replaceState({}, '', window.location.pathname);
+    } catch (e) {
+      showError(e.message);
+      return;
+    }
+  }
+
+  const jwt = localStorage.getItem(JWT_KEY);
+  if (!jwt) { redirectLogin(); return; }
+
+  try {
+    me = await apiFetch('/api/portal/me');
+    applyTheme(me.product_color, me.product_bg);
+    renderUser(me);
+    loadLeads(1);
+    loadIndustries();
+    document.getElementById('loadingScreen').style.display = 'none';
+    document.getElementById('app').style.display = 'block';
+  } catch (e) {
+    if (e.status === 401) redirectLogin();
+    else showError(e.message);
+  }
+}
+
+function applyTheme(color, bg) {
+  document.documentElement.style.setProperty('--accent', color || '#4FC3F7');
+  document.documentElement.style.setProperty('--bg',     bg    || '#0D0D0D');
+  document.documentElement.style.setProperty('--panel',  lightenBg(bg));
+  document.body.style.background = bg || '#0D0D0D';
+}
+
+function lightenBg(bg) {
+  if (!bg) return '#111';
+  // Simple: bump each channel by ~8
+  return bg.replace(/[0-9a-f]{2}/gi, h => {
+    const v = Math.min(255, parseInt(h, 16) + 8).toString(16).padStart(2, '0');
+    return v;
+  });
+}
+
+async function apiFetch(path, opts = {}) {
+  const jwt = localStorage.getItem(JWT_KEY);
+  const r   = await fetch(FLEET + path, {
+    ...opts,
+    headers: { 'Authorization': `Bearer ${jwt}`, 'Content-Type': 'application/json', ...(opts.headers || {}) },
+  });
+  if (r.status === 401) { const err = new Error('unauthorized'); err.status = 401; throw err; }
+  if (!r.ok) { const d = await r.json().catch(() => ({})); throw new Error(d.error || r.statusText); }
+  return r.json();
+}
+
+// ── Render ───────────────────────────────────────────────────────────────────
+
+function renderUser(m) {
+  document.title = `Dashboard — ${m.product_name}`;
+  document.getElementById('headerBrand').textContent = m.product_name;
+  document.getElementById('headerEmail').textContent  = m.email;
+  document.getElementById('statLeads').textContent    = m.lead_count.toLocaleString();
+  document.getElementById('statPlan').textContent     = m.plan === 'lifetime' ? 'Lifetime' : 'Monthly';
+  document.getElementById('statPlanSub').textContent  = m.plan === 'lifetime' ? 'one-time purchase' : '$297/mo · cancel anytime';
+  document.getElementById('statNodes').textContent    = `${m.nodes_used}/${m.max_nodes}`;
+  document.getElementById('statNodeSub').textContent  = `${m.max_nodes - m.nodes_used} slot${m.max_nodes - m.nodes_used !== 1 ? 's' : ''} remaining`;
+  document.getElementById('nodeSlotInfo').textContent = `${m.nodes_used} of ${m.max_nodes} computers registered`;
+  document.getElementById('keyText').textContent      = m.license_key;
+  document.getElementById('dlWindows').href           = m.downloads.windows;
+  document.getElementById('dlMac').href               = m.downloads.macos;
+  renderNodes(m.nodes);
+}
+
+function renderNodes(nodes) {
+  const body = document.getElementById('nodesBody');
+  if (!nodes || !nodes.length) {
+    body.innerHTML = '<div class="empty-note">No computers registered yet. Install the app and activate your license key.</div>';
+    return;
+  }
+  body.innerHTML = nodes.map(n => `
+    <div class="node-row">
+      <div class="node-info">
+        <span class="node-id">${n.machine_id || n.label || n.id}</span>
+        <span class="node-meta">Registered ${formatDate(n.registered_at)} · Last seen ${formatDate(n.last_seen)}</span>
+      </div>
+      <button class="remove-btn" onclick="removeNode('${n.machine_id}')">Remove</button>
+    </div>
+  `).join('');
+}
+
+async function removeNode(machineId) {
+  if (!confirm('Remove this computer? It can re-register using your license key.')) return;
+  await apiFetch(`/api/portal/nodes/${machineId}`, { method: 'DELETE' });
+  me.nodes      = me.nodes.filter(n => n.machine_id !== machineId);
+  me.nodes_used = me.nodes.length;
+  renderNodes(me.nodes);
+  document.getElementById('statNodes').textContent = `${me.nodes_used}/${me.max_nodes}`;
+}
+
+// ── Leads ─────────────────────────────────────────────────────────────────────
+
+async function loadLeads(page) {
+  currentPage      = page;
+  const search     = document.getElementById('searchInput').value.trim();
+  const industry   = document.getElementById('industryFilter').value;
+  const q          = new URLSearchParams({ page, limit: 100 });
+  if (search)   q.set('search', search);
+  if (industry) q.set('industry', industry);
+
+  const data = await apiFetch(`/api/portal/leads?${q}`).catch(() => ({ leads: [], total: 0, pages: 1 }));
+  renderLeads(data);
+}
+
+function renderLeads({ leads, total, pages }) {
+  const tbody = document.getElementById('leadsBody');
+  if (!leads.length) {
+    tbody.innerHTML = `<tr><td colspan="8" style="text-align:center;padding:32px;color:var(--muted)">${total === 0 ? 'No leads yet — start scraping in the desktop app.' : 'No results for this filter.'}</td></tr>`;
+    document.getElementById('pageInfo').textContent = '';
+    document.getElementById('prevBtn').disabled = true;
+    document.getElementById('nextBtn').disabled = true;
+    return;
+  }
+  tbody.innerHTML = leads.map(l => `
+    <tr>
+      <td title="${esc(l.name)}">${esc(l.name)}</td>
+      <td>${esc(l.phone)}</td>
+      <td>${l.email_addr ? `<a href="mailto:${esc(l.email_addr)}" style="color:var(--accent)">${esc(l.email_addr)}</a>` : ''}</td>
+      <td>${l.platform ? `<span class="badge">${esc(l.platform)}</span>` : ''}</td>
+      <td>${esc(l.industry)}</td>
+      <td>${esc(l.city)}${l.state ? ', ' + esc(l.state) : ''}</td>
+      <td>${l.website ? `<a href="${esc(l.website)}" target="_blank" rel="noopener" style="color:var(--accent)">${esc(l.website.replace(/^https?:\/\//, ''))}</a>` : ''}</td>
+      <td>${esc(l.rating)}${l.review_count ? ' (' + esc(l.review_count) + ')' : ''}</td>
+    </tr>
+  `).join('');
+
+  document.getElementById('pageInfo').textContent = `${total.toLocaleString()} leads · page ${currentPage} of ${pages}`;
+  document.getElementById('prevBtn').disabled = currentPage <= 1;
+  document.getElementById('nextBtn').disabled = currentPage >= pages;
+}
+
+async function loadIndustries() {
+  const data = await apiFetch('/api/portal/leads/industries').catch(() => []);
+  const sel  = document.getElementById('industryFilter');
+  data.forEach(r => {
+    const opt = document.createElement('option');
+    opt.value       = r.industry;
+    opt.textContent = `${r.industry} (${r.n})`;
+    sel.appendChild(opt);
+  });
+}
+
+function exportLeads() {
+  const jwt      = localStorage.getItem(JWT_KEY);
+  const industry = document.getElementById('industryFilter').value;
+  const q        = industry ? `?industry=${encodeURIComponent(industry)}` : '';
+  window.open(`${FLEET}/api/portal/leads/export${q}&jwt_token=${encodeURIComponent(jwt)}`, '_blank');
+}
+
+function debouncedSearch() {
+  clearTimeout(searchTimer);
+  searchTimer = setTimeout(() => loadLeads(1), 350);
+}
+
+// ── Helpers ───────────────────────────────────────────────────────────────────
+
+function copyKey() {
+  const key = document.getElementById('keyText').textContent;
+  navigator.clipboard.writeText(key).then(() => {
+    document.getElementById('copyHint').textContent = '✓ copied!';
+    setTimeout(() => document.getElementById('copyHint').textContent = 'click to copy', 2000);
+  });
+}
+
+function formatDate(ts) {
+  if (!ts) return 'never';
+  const d = new Date(ts * 1000);
+  return d.toLocaleDateString('en-US', { month:'short', day:'numeric', year:'numeric' });
+}
+
+function esc(s) {
+  return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function signOut() {
+  localStorage.removeItem(JWT_KEY);
+  window.location.href = '/login.html';
+}
+
+function redirectLogin() {
+  window.location.href = '/login.html';
+}
+
+function showError(msg) {
+  document.getElementById('spinner').style.display = 'none';
+  document.getElementById('loadingMsg').style.display = 'none';
+  const eb = document.getElementById('errorBox');
+  eb.style.display = 'block';
+  eb.querySelector('p').textContent = msg || 'Something went wrong. Please sign in again.';
+}
+
+// ── Boot ──────────────────────────────────────────────────────────────────────
+boot();
+</script>
+</body>
+</html>

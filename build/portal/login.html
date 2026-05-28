@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sign In — Customer Portal</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:var(--bg,#0D0D0D);font-family:'Segoe UI',system-ui,sans-serif;min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px}
+.card{background:#111;border:1px solid #222;border-radius:16px;padding:48px 40px;width:100%;max-width:420px}
+.brand{font-size:22px;font-weight:800;color:var(--accent,#4FC3F7);margin-bottom:4px}
+.brand-sub{font-size:13px;color:#616161;margin-bottom:40px}
+h1{font-size:24px;font-weight:700;color:#E0E0E0;margin-bottom:8px}
+p{color:#9E9E9E;font-size:14px;margin-bottom:32px;line-height:1.6}
+label{display:block;font-size:13px;font-weight:600;color:#BDBDBD;margin-bottom:8px}
+input{width:100%;padding:13px 16px;background:#0D0D0D;border:1.5px solid #2A2A2A;border-radius:8px;color:#E0E0E0;font-size:15px;outline:none;transition:.15s}
+input:focus{border-color:var(--accent,#4FC3F7)}
+.btn{width:100%;padding:14px;background:var(--accent,#4FC3F7);color:#000;border:none;border-radius:8px;font-size:15px;font-weight:700;cursor:pointer;margin-top:16px;transition:.15s}
+.btn:hover{opacity:.9}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+.msg{margin-top:20px;padding:14px 16px;border-radius:8px;font-size:14px;display:none}
+.msg.success{background:rgba(39,174,96,.12);border:1px solid rgba(39,174,96,.3);color:#27AE60}
+.msg.error{background:rgba(231,76,60,.1);border:1px solid rgba(231,76,60,.3);color:#E74C3C}
+.back{text-align:center;margin-top:24px;font-size:13px;color:#616161}
+.back a{color:var(--accent,#4FC3F7)}
+</style>
+</head>
+<body>
+<div class="card">
+  <div class="brand" id="brandName">Loading…</div>
+  <div class="brand-sub">Customer Portal</div>
+
+  <h1>Sign in</h1>
+  <p>Enter the email address you used to purchase. We'll send you a magic sign-in link — no password needed.</p>
+
+  <label for="emailInput">Email address</label>
+  <input type="email" id="emailInput" placeholder="you@company.com" autofocus>
+  <button class="btn" id="sendBtn" onclick="sendLink()">Send Sign-In Link</button>
+
+  <div class="msg" id="msg"></div>
+
+  <div class="back"><a href="/" id="homeLink">&larr; Back to homepage</a></div>
+</div>
+
+<script>
+const FLEET = 'https://leadripper.com';
+
+const PRODUCT_MAP = {
+  'leads.baby':             { slug: 'leadsbaby',        name: 'Leads.Baby',         color: '#FF6B9D', bg: '#0D0608' },
+  'atomicscraper.com':      { slug: 'atomicscraper',    name: 'AtomicScraper',       color: '#00BCD4', bg: '#050F10' },
+  'www.atomicscraper.com':  { slug: 'atomicscraper',    name: 'AtomicScraper',       color: '#00BCD4', bg: '#050F10' },
+  'discoveryoneleads.com':  { slug: 'discovery1',       name: 'Discovery1',          color: '#E67E22', bg: '#0D0A05' },
+  'www.discoveryoneleads.com':{ slug:'discovery1',      name: 'Discovery1',          color: '#E67E22', bg: '#0D0A05' },
+  'leadripper.com':         { slug: 'lead-scraper-pro', name: 'Lead Scraper Pro',    color: '#4FC3F7', bg: '#0D0D1A' },
+};
+
+const host    = window.location.hostname;
+const product = PRODUCT_MAP[host] || { slug: 'lead-scraper-pro', name: 'Customer Portal', color: '#4FC3F7', bg: '#0D0D0D' };
+
+document.documentElement.style.setProperty('--accent', product.color);
+document.documentElement.style.setProperty('--bg',     product.bg);
+document.getElementById('brandName').textContent = product.name;
+document.title = `Sign In — ${product.name}`;
+
+async function sendLink() {
+  const email = document.getElementById('emailInput').value.trim();
+  const btn   = document.getElementById('sendBtn');
+  const msg   = document.getElementById('msg');
+
+  if (!email || !email.includes('@')) {
+    showMsg('Please enter a valid email address.', 'error');
+    return;
+  }
+
+  btn.disabled = true;
+  btn.textContent = 'Sending…';
+  msg.style.display = 'none';
+
+  try {
+    await fetch(`${FLEET}/api/portal/request-login`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email }),
+    });
+    // Always show success (don't reveal if email exists)
+    showMsg(`✓ Check your inbox — a sign-in link was sent to ${email}`, 'success');
+    btn.textContent = 'Link Sent';
+  } catch (e) {
+    btn.disabled = false;
+    btn.textContent = 'Send Sign-In Link';
+    showMsg('Connection error. Please try again.', 'error');
+  }
+}
+
+function showMsg(text, type) {
+  const el = document.getElementById('msg');
+  el.textContent = text;
+  el.className = `msg ${type}`;
+  el.style.display = 'block';
+}
+
+document.getElementById('emailInput').addEventListener('keydown', e => {
+  if (e.key === 'Enter') sendLink();
+});
+</script>
+</body>
+</html>

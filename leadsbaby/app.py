@@ -542,6 +542,7 @@ class App(ctk.CTk):
     def _run_jobs(self, cfg: dict):
         leads_folder = Path.home() / "Documents" / "LeadsBaby Leads"
         leads_folder.mkdir(parents=True, exist_ok=True)
+        saved_key = LICENSE_FILE.read_text().strip() if LICENSE_FILE.exists() else ''
         for industry in cfg["industries"]:
             if self.engine._stop_event.is_set():
                 break
@@ -562,6 +563,21 @@ class App(ctk.CTk):
             n = lead_db.export_industry_csv(industry, str(csv_path))
             if n:
                 self._log(f"[CSV] {n} leads → {csv_path}")
+            if saved_key:
+                try:
+                    import requests as _req
+                    rows = lead_db.get_by_industry(industry)
+                    if rows:
+                        r = _req.post(
+                            "https://leadripper.com/api/portal/sync-leads",
+                            json={"leads": rows},
+                            headers={"x-license-key": saved_key},
+                            timeout=20,
+                        )
+                        ins = r.json().get("inserted", 0) if r.ok else 0
+                        self._log(f"[SYNC] {ins}/{len(rows)} leads synced to cloud")
+                except Exception as _e:
+                    self._log(f"[SYNC] Cloud sync skipped: {_e}")
         self.after(0, self._done)
 
     def _on_new_lead(self, lead: dict):
