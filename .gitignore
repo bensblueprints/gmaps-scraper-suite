@@ -13,3 +13,6 @@ output/
 node_modules/
 # Customer license keys (distribute separately — never commit)
 keys/*_keys.txt
+# Local build env / artifacts (Mac)
+.venv/
+dmg_output/

@@ -16,21 +16,56 @@ from typing import Callable
 # When frozen by PyInstaller, Playwright can't find its bundled browsers.
 # Point it to the system-wide ms-playwright installation instead.
 if getattr(sys, "frozen", False):
+    # Find the Chromium bundled inside the app. Check PyInstaller's _MEIPASS and
+    # the .app's Resources/Frameworks dirs (browser is injected post-build), then
+    # fall back to a system-wide ms-playwright install. First match wins.
+    _cands = []
+    _meipass = getattr(sys, "_MEIPASS", "")
+    if _meipass:
+        _cands.append(Path(_meipass) / "ms-playwright")
+    _contents = Path(sys.executable).resolve().parent.parent  # <App>.app/Contents
+    _cands += [
+        _contents / "Resources" / "ms-playwright",
+        _contents / "Frameworks" / "ms-playwright",
+    ]
     _profile = os.environ.get("USERPROFILE") or os.path.expanduser("~")
-    _ms_pw   = Path(_profile) / "AppData" / "Local" / "ms-playwright"
-    if _ms_pw.exists():
-        os.environ["PLAYWRIGHT_BROWSERS_PATH"] = str(_ms_pw)
+    _cands += [
+        Path(_profile) / "AppData" / "Local" / "ms-playwright",
+        Path(_profile) / "Library" / "Caches" / "ms-playwright",
+    ]
+    for _cand in _cands:
+        try:
+            if _cand.exists() and any(_cand.glob("chromium*")):
+                os.environ["PLAYWRIGHT_BROWSERS_PATH"] = str(_cand)
+                break
+        except Exception:
+            pass
 
 
 # ── Browser management ─────────────────────────────────────────────────────────
 
 def is_chromium_installed() -> bool:
-    profile = os.environ.get("USERPROFILE") or os.path.expanduser("~")
-    ms_pw = Path(profile) / "AppData" / "Local" / "ms-playwright"
-    return (
-        any(ms_pw.glob("chromium-*/chrome-win64/chrome.exe")) or
-        any(ms_pw.glob("chromium-*/chrome-win/chrome.exe"))
+    base = os.environ.get("PLAYWRIGHT_BROWSERS_PATH")
+    if base:
+        roots = [Path(base)]
+    else:
+        profile = os.environ.get("USERPROFILE") or os.path.expanduser("~")
+        roots = [
+            Path(profile) / "Library" / "Caches" / "ms-playwright",
+            Path(profile) / "AppData" / "Local" / "ms-playwright",
+        ]
+    patterns = (
+        "chromium-*/chrome-mac*/*.app",
+        "chromium-*/chrome-win64/chrome.exe",
+        "chromium-*/chrome-win/chrome.exe",
+        "chromium-*/chrome-linux*/chrome",
+        "chromium_headless_shell-*/chrome-headless-shell-*/chrome-headless-shell",
+        "chromium_headless_shell-*/chrome-headless-shell-*/chrome-headless-shell.exe",
     )
+    for ms_pw in roots:
+        if any(any(ms_pw.glob(p)) for p in patterns):
+            return True
+    return False
 
 
 def install_chromium(log: Callable = print) -> bool:

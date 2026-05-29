@@ -233,6 +233,14 @@ def _load_license_hashes() -> frozenset:
 
 
 def _validate_license_key(key: str) -> bool:
+    # macOS builds validate online via Whop; the embedded-hash path is Windows-only here.
+    if sys.platform == "darwin":
+        try:
+            from shared import whop_license
+        except Exception:
+            import whop_license  # frozen: shared dir is on sys.path
+        whop_license.configure(APP_DATA_DIR.name, APP_DATA_DIR)
+        return bool(whop_license.activate(key).get("ok"))
     import hashlib
     normalized = key.upper().strip()
     h = hashlib.sha256(f"{APP_DATA_DIR.name}:{normalized}".encode()).hexdigest()
