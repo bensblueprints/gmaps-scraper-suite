@@ -118,6 +118,7 @@ def scrape(
     headless: bool = True,
     page_workers: int = 4,
     log: Callable = print,
+    stop_event=None,
 ) -> list[dict]:
     """
     1. Collect listing URLs with one browser (sequential scroll — required by Google Maps).
@@ -125,6 +126,9 @@ def scrape(
        This avoids greenlet cross-thread errors that occur when sharing a browser.
     """
     from playwright.sync_api import sync_playwright
+
+    def _stopped():
+        return stop_event is not None and stop_event.is_set()
 
     leads_per_query = max(10, max_leads // max(len(queries), 1))
 
@@ -136,18 +140,21 @@ def scrape(
         page    = context.new_page()
 
         for query in queries:
+            if _stopped():
+                break
             full_query = f"{query} in {location}"
             log(f"Searching: {full_query} (target: up to {leads_per_query} leads)")
             try:
-                urls = _collect_listing_urls(page, full_query, leads_per_query, log)
+                urls = _collect_listing_urls(page, full_query, leads_per_query, log, stop_event)
                 all_urls.extend(urls)
             except Exception as e:
                 log(f"Query error: {e}")
-            time.sleep(random.uniform(1.5, 2.5))
+            if not _stopped():
+                time.sleep(random.uniform(1.5, 2.5))
 
         browser.close()
 
-    if not all_urls:
+    if _stopped() or not all_urls:
         return []
 
     # Deduplicate across queries
@@ -176,6 +183,8 @@ def scrape(
                 page    = context.new_page()
 
                 for url in chunk:
+                    if _stopped():
+                        break
                     try:
                         data = _extract_place(page, url)
                         if data.get("title"):
@@ -195,7 +204,8 @@ def scrape(
                         with counter_lock:
                             counter[0] += 1
                         log(f"  Error: {e}")
-                    time.sleep(random.uniform(0.3, 0.8))
+                    if not _stopped():
+                        time.sleep(random.uniform(0.3, 0.8))
 
                 browser.close()
         except Exception as e:
@@ -216,7 +226,7 @@ def scrape(
 
 # ── Collect listing URLs ───────────────────────────────────────────────────────
 
-def _collect_listing_urls(page, query: str, max_leads: int, log: Callable) -> list:
+def _collect_listing_urls(page, query: str, max_leads: int, log: Callable, stop_event=None) -> list:
     search_url = "https://www.google.com/maps/search/" + query.replace(" ", "+")
     page.goto(search_url, wait_until="domcontentloaded", timeout=30000)
     page.wait_for_timeout(3000)
@@ -233,9 +243,26 @@ def _collect_listing_urls(page, query: str, max_leads: int, log: Callable) -> li
 
     seen: set = set()
     scroll_num = 0
+    last_count = 0
+    stale_scrolls = 0
+    MAX_STALE = 3    # stop after 3 consecutive scrolls with zero new results
+    MAX_SCROLLS = 60 # absolute hard cap regardless of what Google shows
 
-    while len(seen) < max_leads:
+    while len(seen) < max_leads and scroll_num < MAX_SCROLLS:
+        if stop_event is not None and stop_event.is_set():
+            log("  Stopped by user.")
+            break
         scroll_num += 1
+
+        # Check for no-results page before scrolling
+        try:
+            for no_res_text in ["didn't find", "no results", "couldn't find"]:
+                if page.get_by_text(no_res_text, exact=False).count() > 0:
+                    log(f"  Google Maps: no results for this search.")
+                    return []
+        except Exception:
+            pass
+
         hrefs = page.eval_on_selector_all(
             'a[href*="/maps/place/"]',
             "els => els.map(el => el.href)",
@@ -244,6 +271,16 @@ def _collect_listing_urls(page, query: str, max_leads: int, log: Callable) -> li
             seen.add(h.split("?")[0])
 
         log(f"  Scroll {scroll_num}: {len(seen)} listings found (target {max_leads})")
+
+        # Stale detection — no new listings this scroll
+        if len(seen) == last_count:
+            stale_scrolls += 1
+            if stale_scrolls >= MAX_STALE:
+                log(f"  No new listings after {MAX_STALE} scrolls — stopping.")
+                break
+        else:
+            stale_scrolls = 0
+            last_count = len(seen)
 
         try:
             if page.locator("text=You've reached the end").count() > 0:
@@ -257,11 +294,20 @@ def _collect_listing_urls(page, query: str, max_leads: int, log: Callable) -> li
             if feed.count() > 0:
                 feed.evaluate("el => el.scrollBy(0, 3000)")
             else:
-                page.mouse.wheel(0, 3000)
+                # No feed panel at all — likely a no-results or error page
+                log("  No results feed found — stopping.")
+                break
         except Exception:
             break
 
-        page.wait_for_timeout(2000)
+        # Interruptible 2s wait — checks stop every 200ms
+        for _ in range(10):
+            if stop_event is not None and stop_event.is_set():
+                break
+            page.wait_for_timeout(200)
+
+    if scroll_num >= MAX_SCROLLS:
+        log(f"  Hit max scroll limit ({MAX_SCROLLS}) — stopping.")
 
     urls = list(seen)[:max_leads]
     log(f"  Collected {len(urls)} listing URLs")

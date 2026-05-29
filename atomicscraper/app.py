@@ -28,7 +28,7 @@ from engine import ScraperEngine
 from industries import INDUSTRIES
 from shared import lead_db
 from shared.machine_id import get_machine_id
-from shared.cities import get_cities
+from shared.cities import get_cities, CITY_COUNTS
 
 ctk.set_appearance_mode("dark")
 ctk.set_default_color_theme("blue")
@@ -58,15 +58,32 @@ ALL_INDUSTRY_NAMES = list(INDUSTRIES.keys())
 DEFAULT_PIPELINE = ["New Lead", "Contacted", "Interested", "Proposal Sent", "Won", "Lost"]
 
 TABLE_COLS = [
-    ("Name",     "name",        220),
-    ("Phone",    "phone",       120),
-    ("Ph.Type",  "phone_type",   72),
-    ("Email",    "email",       180),
-    ("Rating",   "rating",       55),
-    ("Reviews",  "review_count", 65),
-    ("City",     "city",        110),
-    ("Industry", "industry",    130),
-    ("Website",  "website",     180),
+    ("Name",      "name",           220),
+    ("Phone",     "phone",          120),
+    ("Ph.Type",   "phone_type",      72),
+    ("Email",     "email",          180),
+    ("Platform",  "platform",       110),
+    ("Rating",    "rating",          55),
+    ("Reviews",   "review_count",    65),
+    ("City",      "city",           110),
+    ("State",     "state",           50),
+    ("Industry",  "industry",       130),
+    ("Website",   "website",        180),
+    # ── Social media ──────────────────────────────
+    ("Facebook",  "facebook",       180),
+    ("FB Fans",   "fb_followers",    75),
+    ("Instagram", "instagram",      180),
+    ("IG Fans",   "ig_followers",    75),
+    ("Twitter",   "twitter",        180),
+    ("TW Fans",   "tw_followers",    75),
+    ("LinkedIn",  "linkedin",       200),
+    ("LI Fans",   "li_followers",    75),
+    ("TikTok",    "tiktok",         180),
+    ("TT Fans",   "tt_followers",    75),
+    ("YouTube",   "youtube",        200),
+    ("YT Subs",   "yt_subscribers",  75),
+    ("Pinterest", "pinterest",      180),
+    ("PIN Fans",  "pin_followers",   75),
 ]
 
 
@@ -232,17 +249,31 @@ def _load_license_hashes() -> frozenset:
     return _LICENSE_HASHES
 
 
+def _is_whop_key(key: str) -> bool:
+    import re
+    return bool(re.match(r'^W-[A-Z0-9]{6}-[A-Z0-9]{8}-[A-Z0-9]{7}W$', key.upper().strip()))
+
+
 def _validate_license_key(key: str) -> bool:
-    # macOS builds validate online via Whop; the embedded-hash path is Windows-only here.
-    if sys.platform == "darwin":
+    normalized = key.upper().strip()
+    if _is_whop_key(normalized):
+        # Online Whop validation via backend
         try:
             from shared import whop_license
         except Exception:
             import whop_license  # frozen: shared dir is on sys.path
         whop_license.configure(APP_DATA_DIR.name, APP_DATA_DIR)
-        return bool(whop_license.activate(key).get("ok"))
+        result = whop_license.activate(normalized)
+        if result.get("ok"):
+            return True
+        if result.get("error") == "network_error":
+            # Network down — fall back to cached hash
+            import hashlib
+            h = hashlib.sha256(f"{APP_DATA_DIR.name}:{normalized}".encode()).hexdigest()
+            return h in _load_license_hashes()
+        return False
+    # Local hash key (non-Whop products)
     import hashlib
-    normalized = key.upper().strip()
     h = hashlib.sha256(f"{APP_DATA_DIR.name}:{normalized}".encode()).hexdigest()
     return h in _load_license_hashes()
 
@@ -272,12 +303,58 @@ class LicenseBar(ctk.CTkFrame):
         self.key_entry.pack(side="right", padx=4)
         self.key_entry.bind("<Return>", lambda e: self._do_activate())
 
-        # Auto-activate from saved key
+        # On startup: check cached license (fast, uses saved token)
         if LICENSE_FILE.exists():
             saved = LICENSE_FILE.read_text().strip()
             if saved:
                 self.key_entry.insert(0, saved)
-                self.after(100, self._do_activate)
+                self.after(100, self._check_saved)
+
+    def _mark_licensed(self, offline: bool = False):
+        label = "  Licensed (offline)" if offline else "  Licensed"
+        self.status_lbl.configure(text=label, text_color="#27AE60")
+        self.activate_btn.configure(text="Active", fg_color="#27AE60",
+                                    hover_color="#1E8449", state="disabled")
+        self.key_entry.configure(state="disabled")
+        self.on_activate(True)
+
+    def _check_saved(self):
+        saved = LICENSE_FILE.read_text().strip() if LICENSE_FILE.exists() else ""
+        if not saved:
+            return
+        if _is_whop_key(saved):
+            # Whop key: use cached token check (fast, offline-capable)
+            try:
+                from shared import whop_license
+            except Exception:
+                import whop_license
+            whop_license.configure(APP_DATA_DIR.name, APP_DATA_DIR)
+            result = whop_license.check()
+            if result.get("ok"):
+                self._mark_licensed(offline=result.get("offline", False))
+                return
+            # Token invalid / revoked — clear cached license
+            try:
+                whop_license.clear()
+                LICENSE_FILE.unlink()
+            except Exception:
+                pass
+            self.key_entry.configure(state="normal")
+            self.key_entry.delete(0, "end")
+            self.status_lbl.configure(text="License expired — re-enter key", text_color="#E74C3C")
+            self.on_activate(False)
+        else:
+            # Local hash key: validate instantly (no network needed)
+            if _validate_license_key(saved):
+                self._mark_licensed()
+            else:
+                try:
+                    LICENSE_FILE.unlink()
+                except Exception:
+                    pass
+                self.key_entry.configure(state="normal")
+                self.key_entry.delete(0, "end")
+                self.on_activate(False)
 
     def _do_activate(self):
         key = self.key_entry.get().strip()
@@ -285,11 +362,7 @@ class LicenseBar(ctk.CTkFrame):
             return
         if _validate_license_key(key):
             LICENSE_FILE.write_text(key)
-            self.status_lbl.configure(text="  Licensed", text_color="#27AE60")
-            self.activate_btn.configure(text="Active", fg_color="#27AE60",
-                                        hover_color="#1E8449", state="disabled")
-            self.key_entry.configure(state="disabled")
-            self.on_activate(True)
+            self._mark_licensed()
         else:
             self.status_lbl.configure(text="  Invalid key", text_color="#E74C3C")
             self.on_activate(False)
@@ -300,14 +373,16 @@ class LicenseBar(ctk.CTkFrame):
 # ─────────────────────────────────────────────────────────────────────────────
 
 class LeftPanel(ctk.CTkFrame):
-    def __init__(self, parent, on_start, on_stop, **kw):
+    def __init__(self, parent, on_start, on_stop, on_reenrich=None, on_social_enrich=None, **kw):
         super().__init__(parent, width=300, corner_radius=0, fg_color="#12121E", **kw)
         self.grid_propagate(False)
         self.grid_columnconfigure(0, weight=1)
         self.grid_rowconfigure(1, weight=1)
-        self._on_start = on_start
-        self._on_stop  = on_stop
-        self._filtered = ALL_INDUSTRY_NAMES[:]
+        self._on_start         = on_start
+        self._on_stop          = on_stop
+        self._on_reenrich      = on_reenrich
+        self._on_social_enrich = on_social_enrich
+        self._filtered         = ALL_INDUSTRY_NAMES[:]
 
         self._build_industry_header()
         self._build_industry_list()
@@ -386,7 +461,7 @@ class LeftPanel(ctk.CTkFrame):
         ctk.CTkComboBox(
             cfg,
             values=["Custom city", "Top 10 US cities", "Top 100 US cities",
-                    "Top 1000 US cities", "All US cities"],
+                    "Top 1000 US cities", "Top 5000 US cities", "All US cities"],
             variable=self.city_mode_var,
             command=self._on_city_mode,
             height=28, state="readonly",
@@ -452,10 +527,15 @@ class LeftPanel(ctk.CTkFrame):
             self._city_lbl.configure(text="")
         else:
             self._custom_loc.pack_forget()
-            counts = {"Top 10 US cities": 10, "Top 100 US cities": 100,
-                      "Top 1000 US cities": 1000, "All US cities": 900}
+            counts = {
+                "Top 10 US cities":   CITY_COUNTS["Top 10"],
+                "Top 100 US cities":  CITY_COUNTS["Top 100"],
+                "Top 1000 US cities": CITY_COUNTS["Top 1000"],
+                "Top 5000 US cities": CITY_COUNTS["Top 5000"],
+                "All US cities":      CITY_COUNTS["All US"],
+            }
             n = counts.get(mode, "")
-            self._city_lbl.configure(text=f"Will scrape {n} cities one by one")
+            self._city_lbl.configure(text=f"Will scrape {n:,} cities one by one")
 
     def _build_buttons(self):
         bf = ctk.CTkFrame(self, fg_color="transparent")
@@ -471,7 +551,21 @@ class LeftPanel(ctk.CTkFrame):
             bf, text="■  STOP", command=self._on_stop,
             fg_color="#E74C3C", hover_color="#C0392B",
             height=32, state="disabled")
-        self.stop_btn.pack(fill="x")
+        self.stop_btn.pack(fill="x", pady=(0, 4))
+
+        if self._on_reenrich:
+            self.reenrich_btn = ctk.CTkButton(
+                bf, text="↻  RE-ENRICH LEADS", command=self._on_reenrich,
+                fg_color="#5C6BC0", hover_color="#3949AB",
+                height=30, font=ctk.CTkFont(size=11))
+            self.reenrich_btn.pack(fill="x", pady=(0, 4))
+
+        if self._on_social_enrich:
+            self.social_btn = ctk.CTkButton(
+                bf, text="🔗  SOCIAL ENRICH", command=self._on_social_enrich,
+                fg_color="#B7950B", hover_color="#9A7D0A",
+                height=30, font=ctk.CTkFont(size=11, weight="bold"))
+            self.social_btn.pack(fill="x")
 
     def set_running(self, running: bool):
         self.start_btn.configure(state="disabled" if running else "normal")
@@ -487,7 +581,7 @@ class LeftPanel(ctk.CTkFrame):
         mode_map = {
             "Custom city": "Custom", "Top 10 US cities": "Top 10",
             "Top 100 US cities": "Top 100", "Top 1000 US cities": "Top 1000",
-            "All US cities": "All US",
+            "Top 5000 US cities": "Top 5000", "All US cities": "All US",
         }
         mode   = mode_map.get(self.city_mode_var.get(), "Custom")
         cities = get_cities(mode, self.location_var.get().strip())
@@ -621,6 +715,7 @@ class LeadsTab(ctk.CTkFrame):
         vsb.grid(row=0, column=1, sticky="ns")
         hsb.grid(row=1, column=0, sticky="ew")
         self.tree.bind("<<TreeviewSelect>>", self._on_tree_select)
+        self.tree.bind("<Double-1>", self._on_tree_double_click)
 
         self._rows = []  # cache of current row dicts
 
@@ -672,6 +767,118 @@ class LeadsTab(ctk.CTkFrame):
         else:
             self._sel_lbl.configure(text=f"{n_sel} selected")
             self._sel_all_var.set(False)
+
+    def _on_tree_double_click(self, event=None):
+        sel = self.tree.selection()
+        if not sel:
+            return
+        idx = self.tree.index(sel[0])
+        if idx >= len(self._rows):
+            return
+        lead = self._rows[idx]
+        self._show_lead_detail(lead)
+
+    def _show_lead_detail(self, lead: dict):
+        win = tk.Toplevel(self.crm_parent)
+        win.title(lead.get('name', 'Lead Detail'))
+        win.configure(bg="#0D0D1A")
+        win.geometry("520x500")
+        win.grab_set()
+
+        # Tab bar
+        tab_frame = ctk.CTkFrame(win, fg_color="#12121E", corner_radius=0)
+        tab_frame.pack(fill="x")
+        content = ctk.CTkFrame(win, fg_color="#0D0D1A", corner_radius=0)
+        content.pack(fill="both", expand=True)
+
+        frames = {}
+        tab_btns = {}
+
+        def _show_tab(name):
+            for n, f in frames.items():
+                f.pack_forget()
+            frames[name].pack(fill="both", expand=True, padx=14, pady=10)
+            for n, b in tab_btns.items():
+                b.configure(fg_color=PRODUCT_COLOR if n == name else "transparent",
+                            text_color="#000" if n == name else "#AAA")
+
+        def _make_tab(key, label):
+            btn = ctk.CTkButton(tab_frame, text=label, width=110, height=30,
+                                fg_color="transparent", text_color="#AAA",
+                                hover_color="#1E1E2E", corner_radius=0,
+                                font=ctk.CTkFont(size=11, weight="bold"),
+                                command=lambda k=key: _show_tab(k))
+            btn.pack(side="left", padx=2, pady=4)
+            tab_btns[key] = btn
+            frames[key] = ctk.CTkScrollableFrame(content, fg_color="transparent")
+
+        _make_tab("info", "📋  Info")
+        _make_tab("social", "🔗  Social Media")
+
+        # ── Info tab ──────────────────────────────────────────────────────
+        info_f = frames["info"]
+        fields = [
+            ("Name",      lead.get('name', '')),
+            ("Phone",     lead.get('phone', '')),
+            ("Email",     lead.get('email', '')),
+            ("Platform",  lead.get('platform', '')),
+            ("Website",   lead.get('website', '')),
+            ("Address",   lead.get('address', '')),
+            ("City",      lead.get('city', '')),
+            ("State",     lead.get('state', '')),
+            ("Category",  lead.get('category', '')),
+            ("Rating",    lead.get('rating', '')),
+            ("Reviews",   lead.get('review_count', '')),
+            ("Industry",  lead.get('industry', '')),
+            ("Scraped",   lead.get('scraped_at', '')[:19] if lead.get('scraped_at') else ''),
+        ]
+        for label, val in fields:
+            if not val:
+                continue
+            row = ctk.CTkFrame(info_f, fg_color="transparent")
+            row.pack(fill="x", pady=2)
+            ctk.CTkLabel(row, text=f"{label}:", width=80, anchor="w",
+                         font=ctk.CTkFont(size=11), text_color="#78909C").pack(side="left")
+            ctk.CTkLabel(row, text=str(val), anchor="w", wraplength=340,
+                         font=ctk.CTkFont(size=11), text_color="#E0E0E0").pack(side="left", padx=6)
+
+        # ── Social tab ────────────────────────────────────────────────────
+        soc_f = frames["social"]
+        social_fields = [
+            ("Facebook",  lead.get('facebook',  ''), lead.get('fb_followers',   '')),
+            ("Instagram", lead.get('instagram', ''), lead.get('ig_followers',   '')),
+            ("Twitter/X", lead.get('twitter',   ''), lead.get('tw_followers',   '')),
+            ("LinkedIn",  lead.get('linkedin',  ''), lead.get('li_followers',   '')),
+            ("TikTok",    lead.get('tiktok',    ''), lead.get('tt_followers',   '')),
+            ("YouTube",   lead.get('youtube',   ''), lead.get('yt_subscribers', '')),
+            ("Pinterest", lead.get('pinterest', ''), lead.get('pin_followers',  '')),
+        ]
+        has_any = any(url for _, url, _ in social_fields)
+        if not has_any:
+            ctk.CTkLabel(soc_f,
+                         text="No social media links found yet.\nRun Social Enrich to detect them.",
+                         text_color="#616161", font=ctk.CTkFont(size=12)).pack(pady=30)
+        else:
+            for label, url, followers in social_fields:
+                if not url:
+                    continue
+                row = ctk.CTkFrame(soc_f, fg_color="#1A1A2E", corner_radius=6)
+                row.pack(fill="x", pady=3)
+                ctk.CTkLabel(row, text=label, width=90, anchor="w",
+                             font=ctk.CTkFont(size=11, weight="bold"),
+                             text_color="#B7950B").pack(side="left", padx=10, pady=6)
+                ctk.CTkLabel(row, text=url, anchor="w", wraplength=280,
+                             font=ctk.CTkFont(size=10),
+                             text_color="#90CAF9").pack(side="left", padx=4)
+                if followers:
+                    ctk.CTkLabel(row, text=f"  {followers} followers",
+                                 font=ctk.CTkFont(size=10, weight="bold"),
+                                 text_color="#2ECC71").pack(side="left", padx=6)
+
+        _show_tab("info")
+
+        ctk.CTkButton(win, text="Close", width=100, height=30,
+                      command=win.destroy).pack(pady=(0, 10))
 
     def _get_selected_leads(self, require_one=False) -> list:
         selected = self.tree.selection()
@@ -1648,10 +1855,11 @@ class App(ctk.CTk):
         self.geometry("1500x900")
         self.minsize(1200, 720)
 
-        self._settings = load_settings()
-        self.engine    = ScraperEngine(log_callback=self._log)
-        self._thread   = None
-        self._licensed = False
+        self._settings   = load_settings()
+        self.engine      = ScraperEngine(log_callback=self._log)
+        self._thread     = None
+        self._licensed   = False
+        self._job_queue  = []  # queued cfgs waiting to run
 
         self.grid_rowconfigure(1, weight=1)
         self.grid_columnconfigure(1, weight=1)
@@ -1659,7 +1867,9 @@ class App(ctk.CTk):
         self.license_bar = LicenseBar(self, on_activate=self._on_license)
         self.license_bar.grid(row=0, column=0, columnspan=2, sticky="ew")
 
-        self.left = LeftPanel(self, on_start=self._start, on_stop=self._stop)
+        self.left = LeftPanel(self, on_start=self._start, on_stop=self._stop,
+                              on_reenrich=self._start_reenrich,
+                              on_social_enrich=self._start_social_enrich)
         self.left.grid(row=1, column=0, sticky="nsew")
 
         # Right panel with tabs
@@ -1791,15 +2001,32 @@ class App(ctk.CTk):
                 "Chromium is not installed.\nRun: playwright install chromium")
             return
 
+        if self._thread and self._thread.is_alive():
+            self._job_queue.append(cfg)
+            q = len(self._job_queue)
+            self.status_lbl.configure(
+                text=f"● RUNNING  (+{q} queued)", text_color="#3498DB")
+            messagebox.showinfo(
+                "Job Queued",
+                f"Job added to queue ({q} waiting).\n"
+                "It will start automatically when the current scrape finishes.")
+            return
+
+        self._launch_job(cfg)
+
+    def _launch_job(self, cfg: dict):
+        self.engine._stop_event.clear()
         self.left.set_running(True)
-        self.status_lbl.configure(text="● RUNNING", text_color="#3498DB")
+        q = len(self._job_queue)
+        status = f"● RUNNING  (+{q} queued)" if q else "● RUNNING"
+        self.status_lbl.configure(text=status, text_color="#3498DB")
         self._show_tab("progress")
         self.progress_tab.clear()
-
         self._thread = threading.Thread(target=self._run_jobs, args=(cfg,), daemon=True)
         self._thread.start()
 
     def _stop(self):
+        self._job_queue.clear()
         self.engine.stop()
         self.status_lbl.configure(text="● STOPPING…", text_color="#F39C12")
 
@@ -1809,21 +2036,23 @@ class App(ctk.CTk):
         leads_folder = Path.home() / "Documents" / LEADS_FOLDER
         leads_folder.mkdir(parents=True, exist_ok=True)
 
-        industries    = cfg["industries"]
-        cities        = cfg["cities"]
-        max_leads     = cfg["max_leads"]
-        page_workers  = cfg["page_workers"]
+        industries     = cfg["industries"]
+        cities         = cfg["cities"]
+        max_leads      = cfg["max_leads"]
+        page_workers   = cfg["page_workers"]
         enrich_workers = cfg["enrich_workers"]
         extract_email  = cfg["extract_email"]
-        total_cities  = len(cities)
-        total_jobs    = len(industries) * total_cities
-        job_num       = 0
+        total_cities   = len(cities)
+        total_jobs     = len(industries) * total_cities
+        job_num        = 0
+        all_scraped    = []  # collect raw leads for enrichment pass
 
         self._log(f"[START] {len(industries)} industr{'ies' if len(industries)!=1 else 'y'} × "
                   f"{total_cities} cit{'ies' if total_cities!=1 else 'y'} = {total_jobs} jobs")
         self._log(f"[START] {page_workers} browser tabs  |  {enrich_workers} enrich threads  |  "
                   f"max {max_leads} leads/city\n")
 
+        # ── Phase 1: scrape (leads saved to DB immediately) ───────────────────
         for industry in industries:
             if self.engine._stop_event.is_set():
                 break
@@ -1845,7 +2074,7 @@ class App(ctk.CTk):
                            self.status_lbl.configure(text=t, text_color="#3498DB"))
 
                 try:
-                    self.engine.run_industry(
+                    raw = self.engine.run_industry(
                         industry_name=industry,
                         queries=queries,
                         location=city,
@@ -1856,24 +2085,149 @@ class App(ctk.CTk):
                         on_lead=self._on_new_lead,
                         license_validator=lambda: self._licensed,
                     )
+                    all_scraped.extend(raw)
                 except Exception as e:
                     self._log(f"[ERROR] {e}")
 
-                safe = re.sub(r"[^\w\s-]", "", industry).strip().replace(" ", "_")
-                csv_path = leads_folder / f"{safe}_leads.csv"
-                n = lead_db.export_industry_csv(industry, str(csv_path))
-                if n:
-                    self._log(f"[CSV] {n} leads → {csv_path.name}")
+        if self.engine._stop_event.is_set():
+            self.after(0, self._done)
+            return
+
+        # ── Phase 2: enrich (updates DB in-place) ────────────────────────────
+        leads_with_site = [l for l in all_scraped if l.get('website')]
+        if leads_with_site and extract_email:
+            self._log(f"\n[ENRICH] Starting enrichment for {len(leads_with_site)} leads with websites...")
+            self.after(0, lambda: self.status_lbl.configure(
+                text=f"● Enriching {len(leads_with_site)} leads…", text_color="#9B59B6"))
+
+            def _on_progress(done, total):
+                if done % 10 == 0 or done == total:
+                    self.after(0, lambda: self.status_lbl.configure(
+                        text=f"● Enriching {done}/{total}…", text_color="#9B59B6"))
+
+            try:
+                self.engine.enrich_batch(
+                    leads_with_site,
+                    extract_email=extract_email,
+                    enrich_workers=enrich_workers,
+                    on_progress=_on_progress,
+                )
+            except Exception as e:
+                self._log(f"[ENRICH ERROR] {e}")
+
+        # ── Phase 3: social enrichment (links + follower counts) ─────────────
+        if leads_with_site and not self.engine._stop_event.is_set():
+            self._log(f"\n[SOCIAL] Social enriching {len(leads_with_site)} leads...")
+            self.after(0, lambda: self.status_lbl.configure(
+                text=f"● Social enriching {len(leads_with_site)} leads…", text_color="#B7950B"))
+
+            def _on_social(done, total):
+                if done % 10 == 0 or done == total:
+                    self.after(0, lambda: self.status_lbl.configure(
+                        text=f"● Social {done}/{total}…", text_color="#B7950B"))
+
+            try:
+                self.engine.social_enrich_batch(
+                    leads_with_site,
+                    workers=enrich_workers,
+                    on_progress=_on_social,
+                )
+            except Exception as e:
+                self._log(f"[SOCIAL ERROR] {e}")
+
+        # Export CSVs
+        for industry in industries:
+            safe = re.sub(r"[^\w\s-]", "", industry).strip().replace(" ", "_")
+            csv_path = leads_folder / f"{safe}_leads.csv"
+            n = lead_db.export_industry_csv(industry, str(csv_path))
+            if n:
+                self._log(f"[CSV] {n} leads → {csv_path.name}")
 
         self.after(0, self._done)
 
     def _done(self):
-        self.left.set_running(False)
-        self.status_lbl.configure(text="● DONE", text_color="#2ECC71")
         self.leads_tab.refresh()
         self.leads_tab._reload_filters()
         self._log("\n[DONE] All jobs finished.")
-        self.after(2000, lambda: self._show_tab("leads"))
+
+        # Auto-start next queued job if any
+        if self._job_queue:
+            next_cfg = self._job_queue.pop(0)
+            q = len(self._job_queue)
+            self._log(f"[QUEUE] Starting next job ({q} remaining after this)…")
+            self.after(500, lambda: self._launch_job(next_cfg))
+        else:
+            self.left.set_running(False)
+            self.status_lbl.configure(text="● DONE", text_color="#2ECC71")
+            self.after(2000, lambda: self._show_tab("leads"))
+
+    def _start_reenrich(self):
+        n_enrich = lead_db.count_unenriched()
+        n_social  = lead_db.count_social_unenriched()
+        if n_enrich == 0 and n_social == 0:
+            messagebox.showinfo("Re-Enrich", "Nothing to enrich — all leads are already fully enriched.")
+            return
+        if self._thread and self._thread.is_alive():
+            messagebox.showwarning("Busy", "A scrape is already running. Wait for it to finish.")
+            return
+        self.engine._stop_event.clear()
+        self.status_lbl.configure(text=f"● Enriching…", text_color="#9B59B6")
+        self._show_tab("progress")
+
+        def _run():
+            # Phase 1: regular enrichment (email + platform)
+            if n_enrich > 0:
+                def _on_enrich(done, total):
+                    if done % 10 == 0 or done == total:
+                        self.after(0, lambda: self.status_lbl.configure(
+                            text=f"● Enriching {done}/{total}…", text_color="#9B59B6"))
+                self.engine.enrich_unenriched(on_progress=_on_enrich)
+
+            # Phase 2: social enrichment (links + followers)
+            if n_social > 0 and not self.engine._stop_event.is_set():
+                self.after(0, lambda: self.status_lbl.configure(
+                    text=f"● Social enriching {n_social} leads…", text_color="#B7950B"))
+                def _on_social(done, total):
+                    if done % 10 == 0 or done == total:
+                        self.after(0, lambda: self.status_lbl.configure(
+                            text=f"● Social {done}/{total}…", text_color="#B7950B"))
+                self.engine.social_enrich_unenriched(on_progress=_on_social)
+
+            self.after(0, lambda: (
+                self.status_lbl.configure(text="● DONE", text_color="#2ECC71"),
+                self.leads_tab.refresh(),
+                self.leads_tab._reload_filters(),
+            ))
+
+        self._thread = threading.Thread(target=_run, daemon=True)
+        self._thread.start()
+
+    def _start_social_enrich(self):
+        n = lead_db.count_social_unenriched()
+        if n == 0:
+            messagebox.showinfo("Social Enrich", "No leads pending social enrichment.")
+            return
+        if self._thread and self._thread.is_alive():
+            messagebox.showwarning("Busy", "A scrape or enrichment is already running.")
+            return
+        self.engine._stop_event.clear()
+        self.status_lbl.configure(text=f"● Social enriching {n} leads…", text_color="#B7950B")
+        self._show_tab("progress")
+
+        def _run():
+            def _on_progress(done, total):
+                if done % 10 == 0 or done == total:
+                    self.after(0, lambda: self.status_lbl.configure(
+                        text=f"● Social {done}/{total}…", text_color="#B7950B"))
+            self.engine.social_enrich_unenriched(on_progress=_on_progress)
+            self.after(0, lambda: (
+                self.status_lbl.configure(text="● DONE", text_color="#2ECC71"),
+                self.leads_tab.refresh(),
+                self.leads_tab._reload_filters(),
+            ))
+
+        self._thread = threading.Thread(target=_run, daemon=True)
+        self._thread.start()
 
 
 def main():

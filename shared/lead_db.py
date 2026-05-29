@@ -35,6 +35,23 @@ CREATE TABLE IF NOT EXISTS leads (
     contact_url TEXT,
     industry    TEXT,
     scraped_at  TEXT,
+    enriched         INTEGER DEFAULT 0,
+    social_enriched  INTEGER DEFAULT 0,
+    facebook    TEXT    DEFAULT '',
+    instagram   TEXT    DEFAULT '',
+    twitter     TEXT    DEFAULT '',
+    linkedin    TEXT    DEFAULT '',
+    tiktok      TEXT    DEFAULT '',
+    youtube     TEXT    DEFAULT '',
+    pinterest   TEXT    DEFAULT '',
+    socials     TEXT    DEFAULT '',
+    fb_followers  TEXT  DEFAULT '',
+    ig_followers  TEXT  DEFAULT '',
+    tw_followers  TEXT  DEFAULT '',
+    li_followers  TEXT  DEFAULT '',
+    tt_followers  TEXT  DEFAULT '',
+    yt_subscribers TEXT DEFAULT '',
+    pin_followers TEXT  DEFAULT '',
     UNIQUE(name, phone)
 );
 CREATE INDEX IF NOT EXISTS idx_leads_name     ON leads(name);
@@ -68,6 +85,9 @@ EXPORT_FIELDS = [
     'name', 'phone', 'email', 'platform', 'address', 'city', 'state',
     'website', 'category', 'rating', 'review_count', 'contact_url',
     'industry', 'scraped_at',
+    'facebook', 'instagram', 'twitter', 'linkedin', 'tiktok', 'youtube', 'pinterest',
+    'fb_followers', 'ig_followers', 'tw_followers', 'li_followers',
+    'tt_followers', 'yt_subscribers', 'pin_followers',
 ]
 
 
@@ -81,10 +101,30 @@ def init():
     with _lock:
         c = _conn()
         c.executescript(SCHEMA)
-        # Migrate existing tables with new columns
-        for col, defval in [("phone_type", "''"), ("carrier", "''")]:
+        _migrations = [
+            ("phone_type",      "TEXT",    "''"),
+            ("carrier",         "TEXT",    "''"),
+            ("enriched",        "INTEGER", "0"),
+            ("social_enriched", "INTEGER", "0"),
+            ("facebook",        "TEXT",    "''"),
+            ("instagram",       "TEXT",    "''"),
+            ("twitter",         "TEXT",    "''"),
+            ("linkedin",        "TEXT",    "''"),
+            ("tiktok",          "TEXT",    "''"),
+            ("youtube",         "TEXT",    "''"),
+            ("pinterest",       "TEXT",    "''"),
+            ("socials",         "TEXT",    "''"),
+            ("fb_followers",    "TEXT",    "''"),
+            ("ig_followers",    "TEXT",    "''"),
+            ("tw_followers",    "TEXT",    "''"),
+            ("li_followers",    "TEXT",    "''"),
+            ("tt_followers",    "TEXT",    "''"),
+            ("yt_subscribers",  "TEXT",    "''"),
+            ("pin_followers",   "TEXT",    "''"),
+        ]
+        for col, typ, defval in _migrations:
             try:
-                c.execute(f"ALTER TABLE leads ADD COLUMN {col} TEXT DEFAULT {defval}")
+                c.execute(f"ALTER TABLE leads ADD COLUMN {col} {typ} DEFAULT {defval}")
             except Exception:
                 pass
         c.commit()
@@ -101,6 +141,180 @@ def _city_state(address: str) -> tuple:
         state = state_zip[0] if state_zip else ''
         return city, state
     return '', ''
+
+
+def insert_raw(lead: dict) -> bool:
+    """Insert a raw (pre-enrichment) lead. Skips if name+phone already exists."""
+    city_parsed, state = _city_state(lead.get('address', ''))
+    city = lead.get('scraped_city', '') or city_parsed
+    row = {
+        'name':         lead.get('title') or lead.get('name', ''),
+        'phone':        lead.get('phone', ''),
+        'address':      lead.get('address', ''),
+        'city':         city,
+        'state':        state,
+        'website':      lead.get('website', ''),
+        'category':     lead.get('category', ''),
+        'rating':       lead.get('review_rating', ''),
+        'review_count': lead.get('review_count', ''),
+        'latitude':     lead.get('latitude', ''),
+        'longitude':    lead.get('longitude', ''),
+        'industry':     lead.get('industry', ''),
+        'scraped_at':   lead.get('scraped_at') or datetime.now().isoformat(),
+    }
+    with _lock:
+        c = _conn()
+        try:
+            cur = c.execute(
+                """INSERT OR IGNORE INTO leads
+                   (name,phone,address,city,state,website,category,rating,
+                    review_count,latitude,longitude,industry,scraped_at,enriched)
+                   VALUES
+                   (:name,:phone,:address,:city,:state,:website,:category,:rating,
+                    :review_count,:latitude,:longitude,:industry,:scraped_at,0)""",
+                row
+            )
+            inserted = cur.rowcount > 0
+            c.commit()
+            return inserted
+        finally:
+            c.close()
+
+
+def update_enrichment(lead: dict) -> None:
+    """Update enrichment fields (email, platform, phone_type, etc.) for an existing lead."""
+    name  = lead.get('title') or lead.get('name', '')
+    phone = lead.get('phone', '')
+    emails = lead.get('emails', [])
+    email  = emails[0] if emails else lead.get('email', '')
+    with _lock:
+        c = _conn()
+        try:
+            c.execute(
+                """UPDATE leads SET
+                   email = CASE WHEN ? != '' THEN ? ELSE email END,
+                   platform = CASE WHEN ? != '' THEN ? ELSE platform END,
+                   phone_type = CASE WHEN ? != '' THEN ? ELSE phone_type END,
+                   carrier = CASE WHEN ? != '' THEN ? ELSE carrier END,
+                   contact_url = CASE WHEN ? != '' THEN ? ELSE contact_url END,
+                   enriched = 1
+                   WHERE name = ? AND phone = ?""",
+                (
+                    email, email,
+                    lead.get('platform', ''), lead.get('platform', ''),
+                    lead.get('phone_type', ''), lead.get('phone_type', ''),
+                    lead.get('carrier', ''), lead.get('carrier', ''),
+                    lead.get('contact_url', ''), lead.get('contact_url', ''),
+                    name, phone,
+                )
+            )
+            c.commit()
+        finally:
+            c.close()
+
+
+def get_unenriched(limit: int = 2000) -> list:
+    """Return leads that have a website but haven't been enriched yet."""
+    with _lock:
+        c = _conn()
+        try:
+            rows = c.execute(
+                """SELECT * FROM leads
+                   WHERE website != '' AND website IS NOT NULL AND enriched = 0
+                   ORDER BY id DESC LIMIT ?""",
+                (limit,)
+            ).fetchall()
+            return [dict(r) for r in rows]
+        finally:
+            c.close()
+
+
+def count_unenriched() -> int:
+    with _lock:
+        c = _conn()
+        try:
+            return c.execute(
+                "SELECT COUNT(*) FROM leads WHERE website != '' AND website IS NOT NULL AND enriched = 0"
+            ).fetchone()[0]
+        finally:
+            c.close()
+
+
+def get_social_unenriched(limit: int = 2000) -> list:
+    """Return leads that have a website but haven't had social enrichment yet."""
+    with _lock:
+        c = _conn()
+        try:
+            rows = c.execute(
+                """SELECT * FROM leads
+                   WHERE website != '' AND website IS NOT NULL AND social_enriched = 0
+                   ORDER BY id DESC LIMIT ?""",
+                (limit,)
+            ).fetchall()
+            return [dict(r) for r in rows]
+        finally:
+            c.close()
+
+
+def count_social_unenriched() -> int:
+    with _lock:
+        c = _conn()
+        try:
+            return c.execute(
+                "SELECT COUNT(*) FROM leads WHERE website != '' AND website IS NOT NULL AND social_enriched = 0"
+            ).fetchone()[0]
+        finally:
+            c.close()
+
+
+def update_social(lead: dict) -> None:
+    """Update social media fields and follower counts for an existing lead."""
+    name  = lead.get('title') or lead.get('name', '')
+    phone = lead.get('phone', '')
+    with _lock:
+        c = _conn()
+        try:
+            c.execute(
+                """UPDATE leads SET
+                   facebook     = CASE WHEN ? != '' THEN ? ELSE facebook     END,
+                   instagram    = CASE WHEN ? != '' THEN ? ELSE instagram    END,
+                   twitter      = CASE WHEN ? != '' THEN ? ELSE twitter      END,
+                   linkedin     = CASE WHEN ? != '' THEN ? ELSE linkedin     END,
+                   tiktok       = CASE WHEN ? != '' THEN ? ELSE tiktok       END,
+                   youtube      = CASE WHEN ? != '' THEN ? ELSE youtube      END,
+                   pinterest    = CASE WHEN ? != '' THEN ? ELSE pinterest    END,
+                   socials      = ?,
+                   fb_followers  = CASE WHEN ? != '' THEN ? ELSE fb_followers  END,
+                   ig_followers  = CASE WHEN ? != '' THEN ? ELSE ig_followers  END,
+                   tw_followers  = CASE WHEN ? != '' THEN ? ELSE tw_followers  END,
+                   li_followers  = CASE WHEN ? != '' THEN ? ELSE li_followers  END,
+                   tt_followers  = CASE WHEN ? != '' THEN ? ELSE tt_followers  END,
+                   yt_subscribers = CASE WHEN ? != '' THEN ? ELSE yt_subscribers END,
+                   pin_followers = CASE WHEN ? != '' THEN ? ELSE pin_followers END,
+                   social_enriched = 1
+                   WHERE name = ? AND phone = ?""",
+                (
+                    lead.get('facebook',  ''), lead.get('facebook',  ''),
+                    lead.get('instagram', ''), lead.get('instagram', ''),
+                    lead.get('twitter',   ''), lead.get('twitter',   ''),
+                    lead.get('linkedin',  ''), lead.get('linkedin',  ''),
+                    lead.get('tiktok',    ''), lead.get('tiktok',    ''),
+                    lead.get('youtube',   ''), lead.get('youtube',   ''),
+                    lead.get('pinterest', ''), lead.get('pinterest', ''),
+                    lead.get('socials',   ''),
+                    lead.get('fb_followers',   ''), lead.get('fb_followers',   ''),
+                    lead.get('ig_followers',   ''), lead.get('ig_followers',   ''),
+                    lead.get('tw_followers',   ''), lead.get('tw_followers',   ''),
+                    lead.get('li_followers',   ''), lead.get('li_followers',   ''),
+                    lead.get('tt_followers',   ''), lead.get('tt_followers',   ''),
+                    lead.get('yt_subscribers', ''), lead.get('yt_subscribers', ''),
+                    lead.get('pin_followers',  ''), lead.get('pin_followers',  ''),
+                    name, phone,
+                )
+            )
+            c.commit()
+        finally:
+            c.close()
 
 
 def upsert(lead: dict) -> bool:

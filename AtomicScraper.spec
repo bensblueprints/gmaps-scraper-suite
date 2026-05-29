@@ -3,7 +3,7 @@ from PyInstaller.utils.hooks import collect_all
 
 datas = [('C:\\Users\\ADMIN\\AppData\\Local\\Programs\\Python\\Python311\\Lib\\site-packages\\customtkinter', 'customtkinter'), ('C:\\Users\\ADMIN\\AppData\\Local\\Programs\\Python\\Python311\\Lib\\site-packages\\playwright', 'playwright'), ('C:\\Users\\ADMIN\\Desktop\\gmaps-scraper-suite\\shared\\industries_data.json', 'shared'), ('C:\\Users\\ADMIN\\Desktop\\gmaps-scraper-suite\\shared\\cities.py', 'shared'), ('C:\\Users\\ADMIN\\Desktop\\gmaps-scraper-suite\\keys\\AtomicScraper_hashes.txt', 'keys')]
 binaries = []
-hiddenimports = ['license_hashes', 'twilio', 'twilio.rest', 'shared', 'shared.config', 'shared.machine_id', 'atomicscraper.industries', 'engine', 'tkinter', 'tkinter.ttk', 'shared.api_key_db', 'shared.phone_lookup', 'api', 'api.server', 'fastapi', 'uvicorn', 'uvicorn.logging', 'uvicorn.loops', 'uvicorn.loops.auto', 'uvicorn.protocols', 'uvicorn.protocols.http', 'uvicorn.protocols.http.auto', 'uvicorn.lifespan', 'uvicorn.lifespan.on', 'starlette', 'anyio', 'phonenumbers']
+hiddenimports = ['license_hashes', 'twilio', 'twilio.rest', 'shared', 'shared.config', 'shared.machine_id', 'shared.whop_license', 'atomicscraper.industries', 'engine', 'tkinter', 'tkinter.ttk', 'shared.api_key_db', 'shared.phone_lookup', 'api', 'api.server', 'fastapi', 'uvicorn', 'uvicorn.logging', 'uvicorn.loops', 'uvicorn.loops.auto', 'uvicorn.protocols', 'uvicorn.protocols.http', 'uvicorn.protocols.http.auto', 'uvicorn.lifespan', 'uvicorn.lifespan.on', 'starlette', 'anyio', 'phonenumbers']
 tmp_ret = collect_all('playwright')
 datas += tmp_ret[0]; binaries += tmp_ret[1]; hiddenimports += tmp_ret[2]
 

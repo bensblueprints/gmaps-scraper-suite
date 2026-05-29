@@ -152,6 +152,216 @@ def _fetch(session, url: str) -> tuple:
     return None, {}
 
 
+SOCIAL_ABBREVS = {
+    'facebook':  'FB',
+    'instagram': 'IG',
+    'twitter':   'TW',
+    'linkedin':  'LI',
+    'tiktok':    'TK',
+    'youtube':   'YT',
+    'pinterest': 'PIN',
+}
+
+
+def _extract_social_links(html: str) -> dict:
+    """Scan HTML hrefs for social media profile URLs."""
+    social = {k: '' for k in SOCIAL_ABBREVS}
+    hrefs = re.findall(r'href=["\']([^"\'#\s]{8,})["\']', html, re.IGNORECASE)
+
+    for href in hrefs:
+        hl = href.lower()
+
+        if not social['facebook'] and 'facebook.com/' in hl:
+            path = href.split('facebook.com/')[-1].split('?')[0].strip('/')
+            skip = ('sharer', 'share', 'dialog', 'plugin', 'photo', 'watch',
+                    'group', 'hashtag', 'login', 'event', 'marketplace', 'policies')
+            if path and not any(s in path.lower() for s in skip):
+                slug = path.split('/')[0]
+                if slug:
+                    social['facebook'] = f'https://facebook.com/{slug}'
+
+        if not social['instagram'] and 'instagram.com/' in hl:
+            path = href.split('instagram.com/')[-1].split('?')[0].strip('/')
+            if path and not any(s in path.lower() for s in ('explore', 'accounts', 'login', 'p/', 'reel')):
+                slug = path.split('/')[0]
+                if slug:
+                    social['instagram'] = f'https://instagram.com/{slug}'
+
+        if not social['twitter'] and ('twitter.com/' in hl or 'x.com/' in hl):
+            base = 'twitter.com/' if 'twitter.com/' in hl else 'x.com/'
+            path = href.split(base)[-1].split('?')[0].strip('/')
+            if path and not any(s in path.lower() for s in ('share', 'intent', 'hashtag', 'home', 'search', 'login', 'i/')):
+                slug = path.split('/')[0]
+                if slug:
+                    social['twitter'] = f'https://x.com/{slug}'
+
+        if not social['linkedin'] and 'linkedin.com/' in hl:
+            m = re.search(r'linkedin\.com/(company|in|school)/([^/?#\s]+)', href, re.IGNORECASE)
+            if m:
+                social['linkedin'] = f'https://linkedin.com/{m.group(1)}/{m.group(2)}'
+
+        if not social['tiktok'] and 'tiktok.com/@' in hl:
+            m = re.search(r'tiktok\.com/@([^/?#\s]+)', href, re.IGNORECASE)
+            if m:
+                social['tiktok'] = f'https://tiktok.com/@{m.group(1)}'
+
+        if not social['youtube'] and 'youtube.com/' in hl:
+            m = re.search(r'youtube\.com/(?:channel/|c/|@)([^/?#\s]+)', href, re.IGNORECASE)
+            if m:
+                social['youtube'] = f'https://youtube.com/@{m.group(1)}'
+
+        if not social['pinterest'] and 'pinterest.com/' in hl:
+            path = href.split('pinterest.com/')[-1].split('?')[0].strip('/')
+            if path and not any(s in path.lower() for s in ('pin/', 'search', 'login', 'business')):
+                slug = path.split('/')[0]
+                if slug:
+                    social['pinterest'] = f'https://pinterest.com/{slug}'
+
+        if all(social.values()):
+            break
+
+    return social
+
+
+def build_socials_summary(social: dict) -> str:
+    """Return compact string like 'FB IG LI' from social dict."""
+    return ' '.join(SOCIAL_ABBREVS[k] for k in SOCIAL_ABBREVS if social.get(k))
+
+
+def _fmt_count(n: int) -> str:
+    if n >= 1_000_000:
+        return f"{n / 1_000_000:.1f}M"
+    if n >= 1_000:
+        return f"{n / 1_000:.1f}K"
+    return str(n)
+
+
+def _get_follower_count(session, platform: str, profile_url: str) -> str:
+    """Best-effort follower count scrape. Returns a formatted string or ''."""
+    try:
+        html, _ = _fetch(session, profile_url)
+        if not html:
+            return ''
+
+        if platform == 'youtube':
+            # YouTube puts subscriber count in multiple places
+            for pat in [
+                r'"subscriberCountText":\{"simpleText":"([^"]+)"',
+                r'"subscribers":"([^"]+)"',
+                r'(\d[\d,.]+[KMB]?)\s+subscribers',
+            ]:
+                m = re.search(pat, html, re.IGNORECASE)
+                if m:
+                    return m.group(1).replace('\xa0', ' ')
+
+        elif platform == 'tiktok':
+            for pat in [
+                r'"followerCount":(\d+)',
+                r'"fans":(\d+)',
+            ]:
+                m = re.search(pat, html)
+                if m:
+                    return _fmt_count(int(m.group(1)))
+
+        elif platform == 'instagram':
+            # Shown as JSON in page source; increasingly gated
+            for pat in [
+                r'"edge_followed_by":\{"count":(\d+)\}',
+                r'"followers":(\d+)',
+            ]:
+                m = re.search(pat, html)
+                if m:
+                    return _fmt_count(int(m.group(1)))
+            # Fallback: meta description "12,345 Followers"
+            m = re.search(r'([\d,]+)\s+Followers', html, re.IGNORECASE)
+            if m:
+                return m.group(1)
+
+        elif platform == 'twitter':
+            for pat in [
+                r'"followers_count":(\d+)',
+                r'([\d,]+)\s+Followers',
+            ]:
+                m = re.search(pat, html, re.IGNORECASE)
+                if m:
+                    return m.group(1)
+
+        elif platform == 'facebook':
+            for pat in [
+                r'([\d,.]+[KMB]?)\s+(?:people\s+like|likes\s+this|followers)',
+                r'"follower_count":(\d+)',
+            ]:
+                m = re.search(pat, html, re.IGNORECASE)
+                if m:
+                    return m.group(1)
+
+        elif platform == 'linkedin':
+            m = re.search(r'([\d,]+)\s+followers', html, re.IGNORECASE)
+            if m:
+                return m.group(1)
+
+        elif platform == 'pinterest':
+            m = re.search(r'([\d,]+[KMB]?)\s+[Ff]ollowers', html)
+            if m:
+                return m.group(1)
+
+    except Exception:
+        pass
+    return ''
+
+
+# Follower count column names per platform
+FOLLOWER_COLS = {
+    'facebook':  'fb_followers',
+    'instagram': 'ig_followers',
+    'twitter':   'tw_followers',
+    'linkedin':  'li_followers',
+    'tiktok':    'tt_followers',
+    'youtube':   'yt_subscribers',
+    'pinterest': 'pin_followers',
+}
+
+
+def enrich_social(url: str) -> dict:
+    """
+    Fetch a website, extract social media profile links, then scrape
+    follower counts from each found profile.
+    Returns dict with keys: facebook, instagram, twitter, linkedin,
+    tiktok, youtube, pinterest, socials + per-platform follower columns.
+    """
+    result = {k: '' for k in SOCIAL_ABBREVS}
+    for col in FOLLOWER_COLS.values():
+        result[col] = ''
+    result['socials'] = ''
+
+    if not url or not REQUESTS_OK:
+        return result
+
+    if not url.startswith('http'):
+        url = 'https://' + url
+
+    session = _make_session()
+    html, _ = _fetch(session, url)
+    if html is None:
+        html, _ = _fetch(session, url.replace('https://', 'http://'))
+    if html is None:
+        return result
+
+    social = _extract_social_links(html)
+    result.update(social)
+    result['socials'] = build_socials_summary(social)
+
+    # Fetch follower counts for each found profile
+    for platform, col in FOLLOWER_COLS.items():
+        profile_url = social.get(platform, '')
+        if profile_url:
+            count = _get_follower_count(session, platform, profile_url)
+            result[col] = count
+            time.sleep(0.2)  # polite delay between profile requests
+
+    return result
+
+
 def enrich(url: str, log: Callable = None) -> dict:
     """
     Visit url and return:

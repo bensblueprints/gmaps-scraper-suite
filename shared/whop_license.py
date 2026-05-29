@@ -34,7 +34,7 @@ except Exception:  # pragma: no cover
 
 # Public backend base URL. Override via env or configure(api_base=...).
 # Filled in after the backend is deployed (Netlify site URL).
-LICENSE_API_BASE = os.environ.get("LICENSE_API_BASE", "https://REPLACE-AFTER-DEPLOY.netlify.app").rstrip("/")
+LICENSE_API_BASE = os.environ.get("LICENSE_API_BASE", "https://hub.atomicscraper.com").rstrip("/")
 
 _TIMEOUT = 15
 _PRODUCT = "Unknown"
