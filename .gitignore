@@ -4,12 +4,12 @@ __pycache__/
 *.pyd
 .pytest_cache/
 dist/
-build/Monitor_Dashboard/
-build/Scraper_Node/
+build/
 *.db
 *.csv
 output/
-*.spec
 .env
 .env.*
 node_modules/
+# Customer license keys (distribute separately — never commit)
+keys/*_keys.txt

@@ -1,5 +1,5 @@
 """
-ProspectHunter — desktop scraper + CRM application.
+LeadRipper — desktop scraper + CRM application.
 """
 import re
 import sys
@@ -36,10 +36,10 @@ ctk.set_default_color_theme("blue")
 import logging
 import traceback
 
-PRODUCT_NAME  = "ProspectHunter"
-PRODUCT_COLOR = "#8E44AD"
-LEADS_FOLDER  = "ProspectHunter Leads"
-APP_DATA_DIR  = Path.home() / "AppData" / "Local" / "ProspectHunter"
+PRODUCT_NAME  = "LeadRipper"
+PRODUCT_COLOR = "#FF4500"
+LEADS_FOLDER  = "LeadRipper Leads"
+APP_DATA_DIR  = Path.home() / "AppData" / "Local" / "LeadRipper"
 LICENSE_FILE  = APP_DATA_DIR / "license.txt"
 SETTINGS_FILE = APP_DATA_DIR / "settings.json"
 APP_DATA_DIR.mkdir(parents=True, exist_ok=True)

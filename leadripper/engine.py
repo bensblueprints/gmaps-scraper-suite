@@ -42,13 +42,7 @@ class ScraperEngine:
         extract_email: bool = True,
         headless: bool = True,
         on_lead: Callable = None,
-        license_validator: Callable = None,
     ) -> bool:
-        # Secondary license gate — defense in depth
-        if license_validator is not None and not license_validator():
-            self.log("ERROR: No valid license key. Scraping blocked.")
-            return False
-
         if not self.is_browser_installed():
             self.log("ERROR: Chromium not installed.")
             return False

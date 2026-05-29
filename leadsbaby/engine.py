@@ -12,7 +12,6 @@ if not getattr(sys, "frozen", False):
 
 from shared.config import OUTPUT_DIR, QUERIES_DIR
 from shared import website_enricher, lead_db
-from shared import phone_lookup
 import gmaps_scraper
 
 
@@ -42,13 +41,7 @@ class ScraperEngine:
         extract_email: bool = True,
         headless: bool = True,
         on_lead: Callable = None,
-        license_validator: Callable = None,
     ) -> bool:
-        # Secondary license gate — defense in depth
-        if license_validator is not None and not license_validator():
-            self.log("ERROR: No valid license key. Scraping blocked.")
-            return False
-
         if not self.is_browser_installed():
             self.log("ERROR: Chromium not installed.")
             return False
@@ -84,9 +77,8 @@ class ScraperEngine:
                 key = (r.get('phone', ''), r.get('title', '').lower())
                 if key not in seen:
                     seen.add(key)
-                    r['industry']    = industry_name
-                    r['scraped_city'] = location     # used as fallback city in DB
-                    r['scraped_at']  = datetime.now().isoformat()
+                    r['industry'] = industry_name
+                    r['scraped_at'] = datetime.now().isoformat()
                     unique.append(r)
 
             enriched = self._enrich_batch(unique, extract_email=extract_email,
@@ -127,17 +119,6 @@ class ScraperEngine:
                     self.log(f"  [{i+1}/{total}] enrich error: {e}")
             else:
                 self.log(f"  [{i+1}/{total}] {lead.get('title','')[:40]} (no website)")
-
-            # Phone type classification (free, no API needed)
-            phone = lead.get('phone', '')
-            if phone and not lead.get('phone_type'):
-                try:
-                    ph = phone_lookup.classify_phone(phone)
-                    lead['phone_type'] = ph['type']
-                    lead['carrier']    = ph['carrier']
-                except Exception:
-                    lead['phone_type'] = ''
-                    lead['carrier']    = ''
 
             lead_db.upsert(lead)
             if on_lead:

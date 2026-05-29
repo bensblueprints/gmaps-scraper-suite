@@ -1,77 +1,32 @@
-INDUSTRIES = {
-    "HVAC": {
-        "queries": ["HVAC companies", "heating cooling services", "air conditioning repair"],
-        "color": "#E67E22",
-        "file": "hvac.csv",
-    },
-    "Plumbers": {
-        "queries": ["plumbers", "plumbing services", "emergency plumber"],
-        "color": "#D35400",
-        "file": "plumbers.csv",
-    },
-    "Electricians": {
-        "queries": ["electricians", "electrical contractors", "electrical services"],
-        "color": "#E67E22",
-        "file": "electricians.csv",
-    },
-    "Roofing": {
-        "queries": ["roofing contractors", "roofers", "roof repair services"],
-        "color": "#D35400",
-        "file": "roofing.csv",
-    },
-    "General Contractors": {
-        "queries": ["general contractors", "home remodeling", "construction companies"],
-        "color": "#E67E22",
-        "file": "contractors.csv",
-    },
-    "Pest Control": {
-        "queries": ["pest control services", "exterminators", "termite control"],
-        "color": "#D35400",
-        "file": "pest_control.csv",
-    },
-    "Cleaning Services": {
-        "queries": ["cleaning services", "house cleaning", "commercial cleaning"],
-        "color": "#E67E22",
-        "file": "cleaning.csv",
-    },
-    "Landscaping": {
-        "queries": ["landscaping companies", "lawn care services", "lawn mowing"],
-        "color": "#D35400",
-        "file": "landscaping.csv",
-    },
-    "Window Cleaning": {
-        "queries": ["window cleaning services", "window washers", "commercial window cleaning"],
-        "color": "#E67E22",
-        "file": "window_cleaning.csv",
-    },
-    "Pressure Washing": {
-        "queries": ["pressure washing services", "power washing", "exterior cleaning"],
-        "color": "#D35400",
-        "file": "pressure_washing.csv",
-    },
-    "Handyman Services": {
-        "queries": ["handyman services", "home repair services", "fix it handyman"],
-        "color": "#E67E22",
-        "file": "handyman.csv",
-    },
-    "Pool Service": {
-        "queries": ["pool service companies", "swimming pool maintenance", "pool cleaning"],
-        "color": "#D35400",
-        "file": "pool_service.csv",
-    },
-    "Garage Door Repair": {
-        "queries": ["garage door repair", "garage door installation", "garage door services"],
-        "color": "#E67E22",
-        "file": "garage_door.csv",
-    },
-    "Appliance Repair": {
-        "queries": ["appliance repair services", "home appliance repair", "appliance technician"],
-        "color": "#D35400",
-        "file": "appliance_repair.csv",
-    },
-    "Painting Contractors": {
-        "queries": ["painting contractors", "house painters", "interior exterior painting"],
-        "color": "#E67E22",
-        "file": "painting.csv",
-    },
-}
+"""
+Loads 4000+ GMB industries from shared/industries_data.json.
+Falls back to a small built-in set if the JSON is missing.
+"""
+import json
+import sys
+from pathlib import Path
+
+_HERE = Path(__file__).parent
+_DATA = _HERE.parent / "shared" / "industries_data.json"
+
+# When frozen by PyInstaller, shared data is bundled at _MEIPASS/shared/
+if getattr(sys, "frozen", False):
+    _MEIPASS = Path(sys._MEIPASS)
+    _DATA = _MEIPASS / "shared" / "industries_data.json"
+
+try:
+    with open(_DATA, encoding="utf-8") as f:
+        INDUSTRIES = json.load(f)
+except FileNotFoundError:
+    INDUSTRIES = {
+        "Restaurants":       {"queries": ["restaurants"],       "color": "#E74C3C"},
+        "Plumbers":          {"queries": ["plumbers"],          "color": "#3498DB"},
+        "Dentists":          {"queries": ["dentists"],          "color": "#2ECC71"},
+        "Lawyers":           {"queries": ["lawyers"],           "color": "#9B59B6"},
+        "Electricians":      {"queries": ["electricians"],      "color": "#F39C12"},
+        "HVAC":              {"queries": ["HVAC companies"],    "color": "#1ABC9C"},
+        "Auto Repair":       {"queries": ["auto repair shops"], "color": "#E67E22"},
+        "Contractors":       {"queries": ["general contractors"],"color": "#7F8C8D"},
+        "Cleaning Services": {"queries": ["cleaning services"], "color": "#D35400"},
+        "Landscaping":       {"queries": ["landscaping"],       "color": "#27AE60"},
+    }
