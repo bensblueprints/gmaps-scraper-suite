@@ -10,7 +10,7 @@ datas += tmp_ret[0]; binaries += tmp_ret[1]; hiddenimports += tmp_ret[2]
 
 a = Analysis(
     ['prospecthunter\\app.py'],
-    pathex=['.', 'scraper_node', 'prospecthunter', 'api'],
+    pathex=['.', 'prospecthunter', 'scraper_node', 'api'],
     binaries=binaries,
     datas=datas,
     hiddenimports=hiddenimports,

@@ -10,7 +10,7 @@ datas += tmp_ret[0]; binaries += tmp_ret[1]; hiddenimports += tmp_ret[2]
 
 a = Analysis(
     ['leadsbaby\\app.py'],
-    pathex=['.', 'scraper_node', 'leadsbaby', 'api'],
+    pathex=['.', 'leadsbaby', 'scraper_node', 'api'],
     binaries=binaries,
     datas=datas,
     hiddenimports=hiddenimports,
